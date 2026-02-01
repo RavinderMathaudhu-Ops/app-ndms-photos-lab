@@ -2,6 +2,17 @@ import { ConnectionPool, config as sqlConfig } from 'mssql'
 import { DefaultAzureCredential } from '@azure/identity'
 
 let pool: ConnectionPool | null = null
+let mockDatabase: Map<string, any> = new Map()
+
+// Mock database storage for development
+function initMockDatabase() {
+  if (!mockDatabase.has('upload_sessions')) {
+    mockDatabase.set('upload_sessions', [])
+  }
+  if (!mockDatabase.has('photos')) {
+    mockDatabase.set('photos', [])
+  }
+}
 
 async function getAccessToken(): Promise<string> {
   // In production, use Entra ID authentication
@@ -73,27 +84,159 @@ async function getPool(): Promise<ConnectionPool> {
     console.log('✅ Successfully connected to SQL Server')
   } catch (error) {
     console.error('❌ Failed to connect to SQL Server:', error instanceof Error ? error.message : error)
-    pool = null
-    throw error
+    
+    // In development, fall back to mock database
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️ Falling back to in-memory mock database for development')
+      pool = null // Reset pool to indicate mock mode
+      initMockDatabase()
+    } else {
+      pool = null
+      throw error
+    }
   }
 
   return pool
 }
 
 export async function query(sql: string, params?: Record<string, any>) {
-  const pool = await getPool()
-  const request = pool.request()
+  try {
+    const pool = await getPool()
+    
+    if (!pool) {
+      // Using mock database
+      return queryMockDatabase(sql, params)
+    }
 
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      request.input(key, value)
-    })
+    const request = pool.request()
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        request.input(key, value)
+      })
+    }
+
+    const result = await request.query(sql)
+    return { rows: result.recordset || [] }
+  } catch (error) {
+    console.error('Database query error:', error)
+    throw error
   }
+}
 
-  const result = await request.query(sql)
-  return { rows: result.recordset || [] }
+// Mock database query handler
+function queryMockDatabase(sql: string, params?: Record<string, any>) {
+  initMockDatabase()
+  
+  const sqlUpper = sql.toUpperCase().trim()
+  
+  // INSERT INTO upload_sessions with RETURNING
+  if (sqlUpper.includes('INSERT INTO') && sqlUpper.includes('UPLOAD_SESSIONS') && sqlUpper.includes('RETURNING')) {
+    const newSession = {
+      id: params?.id || Math.random().toString(36).substr(2, 9),
+      pin: params?.pin,
+      team_name: params?.teamName,
+      expires_at: params?.expiresAt instanceof Date ? params.expiresAt.toISOString() : String(params?.expiresAt),
+      created_at: new Date().toISOString(),
+    }
+    const sessions = mockDatabase.get('upload_sessions') || []
+    sessions.push(newSession)
+    mockDatabase.set('upload_sessions', sessions)
+    // RETURNING id, pin, team_name
+    return { rows: [{ id: newSession.id, pin: newSession.pin, team_name: newSession.team_name }] }
+  }
+  
+  // INSERT INTO upload_sessions (no RETURNING)
+  if (sqlUpper.includes('INSERT INTO') && sqlUpper.includes('UPLOAD_SESSIONS')) {
+    const newSession = {
+      id: params?.id || Math.random().toString(36).substr(2, 9),
+      pin: params?.pin,
+      team_name: params?.teamName,
+      expires_at: params?.expiresAt instanceof Date ? params.expiresAt.toISOString() : String(params?.expiresAt),
+      created_at: new Date().toISOString(),
+    }
+    const sessions = mockDatabase.get('upload_sessions') || []
+    sessions.push(newSession)
+    mockDatabase.set('upload_sessions', sessions)
+    return { rows: [] }
+  }
+  
+  // SELECT FROM upload_sessions WHERE pin
+  if (sqlUpper.includes('SELECT') && sqlUpper.includes('UPLOAD_SESSIONS') && sqlUpper.includes('PIN')) {
+    const sessions = mockDatabase.get('upload_sessions') || []
+    const pin = params?.pin
+    const filtered = sessions.filter((s: any) => s.pin === pin && new Date(s.expires_at) > new Date())
+    return { rows: filtered }
+  }
+  
+  // SELECT FROM upload_sessions (all)
+  if (sqlUpper.includes('SELECT') && sqlUpper.includes('UPLOAD_SESSIONS')) {
+    const sessions = mockDatabase.get('upload_sessions') || []
+    return { rows: sessions }
+  }
+  
+  // INSERT INTO photos with RETURNING
+  if (sqlUpper.includes('INSERT INTO') && sqlUpper.includes('PHOTOS') && sqlUpper.includes('RETURNING')) {
+    const newPhoto = {
+      id: params?.id || Math.random().toString(36).substr(2, 9),
+      session_id: params?.sessionId,
+      file_name: params?.fileName,
+      blob_url: params?.blobUrl,
+      file_size: params?.fileSize,
+      width: params?.width,
+      height: params?.height,
+      mime_type: params?.mimeType,
+      incident_id: params?.incidentId,
+      latitude: params?.latitude,
+      longitude: params?.longitude,
+      location_name: params?.locationName,
+      notes: params?.notes,
+      created_at: new Date().toISOString(),
+    }
+    const photos = mockDatabase.get('photos') || []
+    photos.push(newPhoto)
+    mockDatabase.set('photos', photos)
+    // RETURNING id, file_name, file_size, width, height, mime_type
+    return { rows: [{ id: newPhoto.id, file_name: newPhoto.file_name, file_size: newPhoto.file_size, width: newPhoto.width, height: newPhoto.height, mime_type: newPhoto.mime_type }] }
+  }
+  
+  // INSERT INTO photos (no RETURNING)
+  if (sqlUpper.includes('INSERT INTO') && sqlUpper.includes('PHOTOS')) {
+    const newPhoto = {
+      id: params?.id || Math.random().toString(36).substr(2, 9),
+      session_id: params?.sessionId,
+      file_name: params?.fileName,
+      blob_url: params?.blobUrl,
+      file_size: params?.fileSize,
+      width: params?.width,
+      height: params?.height,
+      mime_type: params?.mimeType,
+      incident_id: params?.incidentId,
+      latitude: params?.latitude,
+      longitude: params?.longitude,
+      location_name: params?.locationName,
+      notes: params?.notes,
+      created_at: new Date().toISOString(),
+    }
+    const photos = mockDatabase.get('photos') || []
+    photos.push(newPhoto)
+    mockDatabase.set('photos', photos)
+    return { rows: [] }
+  }
+  
+  // SELECT FROM photos
+  if (sqlUpper.includes('SELECT') && sqlUpper.includes('PHOTOS')) {
+    const photos = mockDatabase.get('photos') || []
+    return { rows: photos }
+  }
+  
+  console.warn(`⚠️ Mock database: Unhandled query: ${sql.substring(0, 80)}...`)
+  return { rows: [] }
 }
 
 export async function closePool() {
-  if (pool) await pool.close()
+  if (pool) {
+    await pool.close()
+    pool = null
+  }
 }
