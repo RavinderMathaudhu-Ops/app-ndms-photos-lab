@@ -66,5 +66,5 @@ jobs:
         with:
           app-name: 'app-ndms-photos-lab'
           slot-name: 'Production'
-          package: .
+          package: node-app
           startup-command: 'node server.js'
