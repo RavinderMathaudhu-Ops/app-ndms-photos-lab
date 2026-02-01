@@ -23,24 +23,17 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install and build
+      - name: npm install, build, and test
         run: |
           npm install
-          npm run build
-
-      - name: Create deployment package
-        run: |
-          mkdir deploy
-          cp -r .next deploy/.next
-          cp -r node_modules deploy/node_modules
-          cp -r public deploy/public
-          cp package.json deploy/
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
