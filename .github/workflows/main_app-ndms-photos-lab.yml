@@ -62,4 +62,3 @@ jobs:
           app-name: 'app-ndms-photos-lab'
           slot-name: 'Production'
           package: .
-          startup-command: 'node node_modules/.bin/next start -p $PORT'
