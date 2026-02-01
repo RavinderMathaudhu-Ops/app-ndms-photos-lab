@@ -32,7 +32,7 @@ async function getAccessToken(): Promise<string> {
   }
 }
 
-async function getPool(): Promise<ConnectionPool> {
+async function getPool(): Promise<ConnectionPool | null> {
   if (pool) return pool
 
   // Determine authentication method

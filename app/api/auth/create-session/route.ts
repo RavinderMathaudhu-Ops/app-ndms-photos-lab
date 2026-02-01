@@ -85,7 +85,6 @@ export async function POST(req: Request) {
       pin: '***' + pin.slice(-2), // Log last 2 digits only for security
     })
     console.log('✅ PIN_CREATED:', auditLog)
-    console.log('📋 Query result:', JSON.stringify(result.rows[0]), 'Type:', typeof result.rows[0])
     
     return Response.json(result.rows[0])
   } catch (error) {
