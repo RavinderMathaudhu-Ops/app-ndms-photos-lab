@@ -383,7 +383,7 @@ export default function PhotoUploadWizard() {
   }
 
   /* ───── Derived ────────────────────────────── */
-  const isDark = step === 'welcome' || step === 'pin' || step === 'uploading' || step === 'success'
+  const isDark = true
   const RING_R = 52
   const RING_CIRC = 2 * Math.PI * RING_R
 
@@ -392,11 +392,7 @@ export default function PhotoUploadWizard() {
      ═══════════════════════════════════════════════════════ */
   return (
     <div
-      className={`min-h-screen relative overflow-hidden transition-colors duration-700 ${
-        isDark
-          ? 'bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]'
-          : 'bg-gradient-to-b from-slate-50 to-white'
-      }`}
+      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]"
     >
       {isDark && <Particles />}
 
@@ -649,8 +645,8 @@ export default function PhotoUploadWizard() {
                 className={`relative cursor-pointer rounded-3xl border-2 border-dashed p-14 text-center
                   transition-all duration-300 ${
                     dragOver
-                      ? 'border-[#155197] bg-[#155197]/10 scale-[1.02] shadow-xl shadow-[#155197]/10'
-                      : 'border-slate-200 hover:border-[#155197]/40 hover:bg-slate-50/50'
+                      ? 'border-blue-400 bg-blue-400/10 scale-[1.02] shadow-xl shadow-blue-400/10'
+                      : 'border-white/20 hover:border-white/40 hover:bg-white/5'
                   }`}
               >
                 <motion.div
@@ -661,12 +657,12 @@ export default function PhotoUploadWizard() {
                   }
                   transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                 >
-                  <ImagePlus className="w-14 h-14 mx-auto text-[#155197]/30 mb-4" />
+                  <ImagePlus className="w-14 h-14 mx-auto text-white/30 mb-4" />
                 </motion.div>
-                <p className="text-lg font-semibold text-slate-700">
+                <p className="text-lg font-semibold text-white">
                   {dragOver ? 'Drop photos here' : 'Tap to select photos'}
                 </p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-sm text-blue-200/50 mt-1">
                   or drag &amp; drop &bull; JPG, PNG, HEIC &bull; Max 50 MB
                 </p>
                 <input
@@ -719,7 +715,7 @@ export default function PhotoUploadWizard() {
                     className="space-y-5"
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                      <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider">
                         {photos.length} photo{photos.length !== 1 ? 's' : ''} selected
                       </h3>
                       <button
@@ -728,7 +724,7 @@ export default function PhotoUploadWizard() {
                           photos.forEach((p) => URL.revokeObjectURL(p.preview))
                           setPhotos([])
                         }}
-                        className="text-xs text-red-500/70 hover:text-red-600 transition font-medium"
+                        className="text-xs text-red-400/70 hover:text-red-300 transition font-medium"
                       >
                         Clear all
                       </button>
@@ -749,7 +745,7 @@ export default function PhotoUploadWizard() {
                               stiffness: 400,
                               damping: 22,
                             }}
-                            className="relative aspect-square rounded-2xl overflow-hidden group shadow-md"
+                            className="relative aspect-square rounded-2xl overflow-hidden group shadow-lg shadow-black/30 ring-1 ring-white/10"
                           >
                             <img
                               src={photo.preview}
@@ -822,7 +818,7 @@ export default function PhotoUploadWizard() {
                 {photos.map((p) => (
                   <div
                     key={p.id}
-                    className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden ring-2 ring-white shadow-md snap-start"
+                    className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden ring-2 ring-white/20 shadow-md snap-start"
                   >
                     <img
                       src={p.preview}
@@ -837,31 +833,31 @@ export default function PhotoUploadWizard() {
                 {/* Incident ID + Location row */}
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Incident ID</label>
+                    <label className="text-xs font-semibold text-white/50">Incident ID</label>
                     <input
                       type="text"
                       value={incidentId}
                       onChange={(e) => setIncidentId(e.target.value)}
                       placeholder="e.g., HU-2024-001"
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white
-                        focus:border-[#155197] focus:ring-2 focus:ring-[#155197]/15
-                        outline-none transition text-slate-800 text-sm"
+                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/10
+                        focus:border-white/30 focus:ring-2 focus:ring-white/10
+                        outline-none transition text-white placeholder:text-white/30 text-sm"
                     />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Location</label>
+                    <label className="text-xs font-semibold text-white/50">Location</label>
                     <div className="flex gap-1.5">
                       <button
                         type="button"
                         onClick={getLocation}
                         disabled={locating}
-                        className="flex items-center gap-1 px-2.5 py-2.5 rounded-xl border border-slate-200
-                          bg-white hover:border-[#155197]/40 transition text-xs font-medium text-slate-600"
+                        className="flex items-center gap-1 px-2.5 py-2.5 rounded-xl border border-white/10
+                          bg-white/10 hover:bg-white/20 transition text-xs font-medium text-white/70"
                       >
                         {locating ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#155197]" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-300" />
                         ) : (
-                          <Locate className="w-3.5 h-3.5 text-[#155197]" />
+                          <Locate className="w-3.5 h-3.5 text-blue-300" />
                         )}
                         GPS
                       </button>
@@ -874,9 +870,9 @@ export default function PhotoUploadWizard() {
                           onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupZip() } }}
                           placeholder="ZIP"
-                          className="w-[72px] px-2.5 py-2.5 rounded-xl border border-slate-200 bg-white
-                            focus:border-[#155197] focus:ring-2 focus:ring-[#155197]/15
-                            outline-none transition text-slate-800 text-sm text-center"
+                          className="w-[72px] px-2.5 py-2.5 rounded-xl border border-white/10 bg-white/10
+                            focus:border-white/30 focus:ring-2 focus:ring-white/10
+                            outline-none transition text-white placeholder:text-white/30 text-sm text-center"
                         />
                         {zipCode.length === 5 && (
                           <button
@@ -900,7 +896,7 @@ export default function PhotoUploadWizard() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="text-xs text-amber-600 flex items-center gap-1.5"
+                      className="text-xs text-amber-300 flex items-center gap-1.5"
                     >
                       <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                       {gpsError}
@@ -912,8 +908,8 @@ export default function PhotoUploadWizard() {
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl
-                        bg-[#155197]/8 border border-[#155197]/15
-                        text-[#155197] text-xs font-mono"
+                        bg-white/10 border border-white/10
+                        text-blue-200 text-xs font-mono"
                     >
                       <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                       <span className="truncate">{locationName}</span>
@@ -921,7 +917,7 @@ export default function PhotoUploadWizard() {
                         type="button"
                         title="Clear location"
                         onClick={() => { setLocation(null); setLocationName(''); setZipCode('') }}
-                        className="ml-auto text-[#155197]/50 hover:text-[#155197] transition"
+                        className="ml-auto text-white/40 hover:text-white transition"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -931,16 +927,16 @@ export default function PhotoUploadWizard() {
 
                 {/* Notes */}
                 <div className="flex-1 min-h-0 flex flex-col space-y-1">
-                  <label className="text-xs font-semibold text-slate-500">Notes (optional)</label>
+                  <label className="text-xs font-semibold text-white/50">Notes (optional)</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value.slice(0, 500))}
                     placeholder="Describe what's in the photos, context, conditions..."
-                    className="flex-1 min-h-[60px] w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white
-                      focus:border-[#155197] focus:ring-2 focus:ring-[#155197]/15
-                      outline-none transition resize-none text-slate-800 text-sm"
+                    className="flex-1 min-h-[60px] w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/10
+                      focus:border-white/30 focus:ring-2 focus:ring-white/10
+                      outline-none transition resize-none text-white placeholder:text-white/30 text-sm"
                   />
-                  <p className="text-[10px] text-slate-400 text-right">{notes.length}/500</p>
+                  <p className="text-[10px] text-white/30 text-right">{notes.length}/500</p>
                 </div>
               </div>
 
@@ -949,8 +945,8 @@ export default function PhotoUploadWizard() {
                 <button
                   type="button"
                   onClick={() => goTo('photos')}
-                  className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-500
-                    font-semibold hover:bg-slate-50 transition text-sm"
+                  className="flex-1 py-3 rounded-xl border-2 border-white/15 text-white/60
+                    font-semibold hover:bg-white/5 transition text-sm"
                 >
                   &larr; Back
                 </button>
