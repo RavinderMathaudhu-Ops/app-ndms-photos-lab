@@ -259,8 +259,16 @@ export default function PhotoUploadWizard() {
   )
 
   /* ───── Location ───────────────────────────── */
+  const [gpsError, setGpsError] = useState('')
+  const [zipCode, setZipCode] = useState('')
+  const [zipLooking, setZipLooking] = useState(false)
+
   const getLocation = () => {
-    if (!navigator.geolocation) return
+    setGpsError('')
+    if (!navigator.geolocation) {
+      setGpsError('GPS not available on this device. Use ZIP code instead.')
+      return
+    }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -269,9 +277,48 @@ export default function PhotoUploadWizard() {
           `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
         )
         setLocating(false)
+        setGpsError('')
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setGpsError('Location access denied. Enable in browser settings or use ZIP code.')
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setGpsError('Location unavailable. Use ZIP code instead.')
+        } else {
+          setGpsError('Location timed out. Use ZIP code instead.')
+        }
+      },
+      { timeout: 10000 },
     )
+  }
+
+  const lookupZip = async () => {
+    const cleaned = zipCode.replace(/\s/g, '').slice(0, 5)
+    if (!/^\d{5}$/.test(cleaned)) {
+      setGpsError('Enter a valid 5-digit ZIP code')
+      return
+    }
+    setZipLooking(true)
+    setGpsError('')
+    try {
+      const res = await fetch(
+        `https://api.zippopotam.us/us/${cleaned}`
+      )
+      if (!res.ok) throw new Error('ZIP not found')
+      const data = await res.json()
+      const place = data.places?.[0]
+      if (!place) throw new Error('ZIP not found')
+      const lat = parseFloat(place.latitude)
+      const lng = parseFloat(place.longitude)
+      setLocation({ lat, lng })
+      setLocationName(`${place['place name']}, ${place['state abbreviation']} ${cleaned}`)
+      setGpsError('')
+    } catch {
+      setGpsError('ZIP code not found. Check and try again.')
+    } finally {
+      setZipLooking(false)
+    }
   }
 
   /* ───── Upload ─────────────────────────────── */
@@ -803,39 +850,84 @@ export default function PhotoUploadWizard() {
                   </div>
                   <div className="flex-1 space-y-1">
                     <label className="text-xs font-semibold text-slate-500">Location</label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <button
                         type="button"
                         onClick={getLocation}
                         disabled={locating}
-                        className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200
-                          bg-white hover:border-[#155197]/40 transition text-sm font-medium text-slate-600"
+                        className="flex items-center gap-1 px-2.5 py-2.5 rounded-xl border border-slate-200
+                          bg-white hover:border-[#155197]/40 transition text-xs font-medium text-slate-600"
                       >
                         {locating ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-[#155197]" />
                         ) : (
                           <Locate className="w-3.5 h-3.5 text-[#155197]" />
                         )}
-                        {locating ? 'GPS...' : 'Get GPS'}
+                        GPS
                       </button>
-                      <AnimatePresence>
-                        {location && (
-                          <motion.div
-                            initial={{ opacity: 0, x: 8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 8 }}
-                            className="flex-1 flex items-center gap-1.5 px-3 py-2.5 rounded-xl
-                              bg-[#155197]/8 border border-[#155197]/15
-                              text-[#155197] text-xs font-mono truncate"
+                      <div className="flex-1 flex gap-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={5}
+                          value={zipCode}
+                          onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupZip() } }}
+                          placeholder="ZIP"
+                          className="w-[72px] px-2.5 py-2.5 rounded-xl border border-slate-200 bg-white
+                            focus:border-[#155197] focus:ring-2 focus:ring-[#155197]/15
+                            outline-none transition text-slate-800 text-sm text-center"
+                        />
+                        {zipCode.length === 5 && (
+                          <button
+                            type="button"
+                            onClick={lookupZip}
+                            disabled={zipLooking}
+                            className="px-2 py-2.5 rounded-xl bg-[#155197] text-white text-xs font-medium"
                           >
-                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{locationName}</span>
-                          </motion.div>
+                            {zipLooking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Go'}
+                          </button>
                         )}
-                      </AnimatePresence>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Location result / error */}
+                <AnimatePresence>
+                  {gpsError && !location && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-xs text-amber-600 flex items-center gap-1.5"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {gpsError}
+                    </motion.p>
+                  )}
+                  {location && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                        bg-[#155197]/8 border border-[#155197]/15
+                        text-[#155197] text-xs font-mono"
+                    >
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">{locationName}</span>
+                      <button
+                        type="button"
+                        title="Clear location"
+                        onClick={() => { setLocation(null); setLocationName(''); setZipCode('') }}
+                        className="ml-auto text-[#155197]/50 hover:text-[#155197] transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Notes */}
                 <div className="flex-1 min-h-0 flex flex-col space-y-1">
