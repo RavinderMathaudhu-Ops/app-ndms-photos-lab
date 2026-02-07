@@ -35,8 +35,10 @@ export async function GET(
       return new Response('Storage not configured', { status: 500 })
     }
 
+    // Blob names are lowercase (uuid), but SQL returns uppercase GUIDs
+    const blobId = photoId.toLowerCase()
     const container = client.getContainerClient('aspr-photos')
-    const blob = container.getBlockBlobClient(`${photoId}/${type}`)
+    const blob = container.getBlockBlobClient(`${blobId}/${type}`)
 
     const exists = await blob.exists()
     if (!exists) {

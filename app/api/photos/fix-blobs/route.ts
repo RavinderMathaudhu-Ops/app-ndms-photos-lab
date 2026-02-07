@@ -41,8 +41,9 @@ export async function POST(req: Request) {
 
     for (const row of result.rows) {
       try {
-        const originalBlob = container.getBlockBlobClient(`${row.id}/original`)
-        const thumbnailBlob = container.getBlockBlobClient(`${row.id}/thumbnail`)
+        const blobId = row.id.toLowerCase()
+        const originalBlob = container.getBlockBlobClient(`${blobId}/original`)
+        const thumbnailBlob = container.getBlockBlobClient(`${blobId}/thumbnail`)
 
         await originalBlob.setHTTPHeaders({
           blobContentType: row.mime_type || 'image/jpeg',

@@ -39,13 +39,14 @@ export async function DELETE(
       return Response.json({ error: 'Photo not found' }, { status: 404 })
     }
 
-    // Delete blobs
+    // Delete blobs (blob names are lowercase uuid, SQL returns uppercase)
+    const blobId = photoId.toLowerCase()
     const client = getBlobClient()
     if (client) {
       const container = client.getContainerClient('aspr-photos')
       try {
-        await container.getBlockBlobClient(`${photoId}/original`).deleteIfExists()
-        await container.getBlockBlobClient(`${photoId}/thumbnail`).deleteIfExists()
+        await container.getBlockBlobClient(`${blobId}/original`).deleteIfExists()
+        await container.getBlockBlobClient(`${blobId}/thumbnail`).deleteIfExists()
       } catch (e) {
         console.error('Blob delete error:', e)
       }
