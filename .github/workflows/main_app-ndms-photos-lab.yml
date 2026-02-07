@@ -64,7 +64,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-aspr-photos-lab'
+          app-name: 'app-ndms-photos-lab'
           slot-name: 'Production'
           package: .
           startup-command: 'node server.js'
