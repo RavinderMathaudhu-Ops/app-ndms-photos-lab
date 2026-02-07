@@ -67,19 +67,22 @@ const popIn = {
 }
 
 /* ─── Floating Particles ─────────────────────────────── */
-function Particles() {
+function Particles({ muted = false }: { muted?: boolean }) {
   const [ready, setReady] = useState(false)
   useEffect(() => setReady(true), [])
   if (!ready) return null
 
+  const count = muted ? 18 : 35
+  const opacity = muted ? 'bg-white/[0.04]' : 'bg-white/[0.07]'
+
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 35 }, (_, i) => {
+    <div className={`absolute inset-0 overflow-hidden pointer-events-none z-[1] transition-opacity duration-1000 ${muted ? 'opacity-60' : 'opacity-100'}`}>
+      {Array.from({ length: count }, (_, i) => {
         const size = 2 + (i * 7) % 6
         return (
           <div
             key={i}
-            className="absolute rounded-full bg-white/[0.07] animate-float"
+            className={`absolute rounded-full ${opacity} animate-float`}
             style={{
               width: size,
               height: size,
@@ -386,14 +389,48 @@ export default function PhotoUploadWizard() {
   const RING_R = 52
   const RING_CIRC = 2 * Math.PI * RING_R
 
+  /* ─── Background image per step ───────────────────── */
+  const showHeroField = step === 'welcome' || step === 'success'
+  const showHeroCollage = step === 'pin'
+
   /* ═══════════════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════════════ */
   return (
     <div
-      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]"
+      className="min-h-screen relative overflow-hidden bg-[#031a36]"
     >
-      {isDark && <Particles />}
+      {/* ─── Background layers ─── */}
+      <div className="absolute inset-0 z-0">
+        {/* Base gradient (always visible underneath) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]" />
+
+        {/* Hero field image — welcome + success */}
+        <div className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${showHeroField ? 'opacity-100' : 'opacity-0'}`}>
+          <img
+            src="/hero-field.png"
+            alt=""
+            className="w-full h-full object-cover animate-ken-burns"
+          />
+          <div className={`absolute inset-0 transition-all duration-[1200ms] ${
+            step === 'success'
+              ? 'bg-gradient-to-b from-[#031a36]/60 via-emerald-950/50 to-[#062e61]/95'
+              : 'bg-gradient-to-b from-[#031a36]/30 via-[#062e61]/50 to-[#062e61]/90'
+          }`} />
+        </div>
+
+        {/* Hero collage — PIN step */}
+        <div className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${showHeroCollage ? 'opacity-100' : 'opacity-0'}`}>
+          <img
+            src="/hero-collage.png"
+            alt=""
+            className="w-full h-full object-cover animate-ken-burns-delayed"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#031a36]/50 via-[#062e61]/65 to-[#062e61]/95" />
+        </div>
+      </div>
+
+      {isDark && <Particles muted={showHeroField || showHeroCollage} />}
 
       {/* ─── Branded header (light steps) ─── */}
       {(step === 'photos' || step === 'metadata') && (

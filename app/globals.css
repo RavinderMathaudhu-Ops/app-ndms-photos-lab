@@ -111,6 +111,22 @@ body {
   animation: float ease-in-out infinite;
 }
 
+/* Ken Burns — subtle slow zoom + drift for hero backgrounds */
+@keyframes ken-burns {
+  0%   { transform: scale(1.0)  translate(0, 0); }
+  50%  { transform: scale(1.08) translate(-1%, -0.5%); }
+  100% { transform: scale(1.0)  translate(0, 0); }
+}
+
+.animate-ken-burns {
+  animation: ken-burns 25s ease-in-out infinite;
+}
+
+.animate-ken-burns-delayed {
+  animation: ken-burns 25s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
 /* Lenis smooth scroll */
 html.lenis, html.lenis body {
   height: auto;
