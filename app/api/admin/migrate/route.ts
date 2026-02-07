@@ -14,6 +14,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
          ALTER TABLE upload_sessions ALTER COLUMN pin NVARCHAR(72) NOT NULL`,
   },
 
+  // ── upload_sessions: is_active column for revoke ──
+  {
+    name: 'upload_sessions.is_active',
+    sql: `IF COL_LENGTH('upload_sessions', 'is_active') IS NULL
+          ALTER TABLE upload_sessions ADD is_active BIT NOT NULL DEFAULT 1`,
+  },
+
   // ── Photos table: new columns ──
   {
     name: 'photos.status',
@@ -88,6 +95,16 @@ const MIGRATIONS: { name: string; sql: string }[] = [
             date_taken_exif DATETIME, software NVARCHAR(100), raw_json NVARCHAR(MAX),
             CONSTRAINT FK_exif_photo FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE
           )`,
+  },
+  {
+    name: 'IX_exif_camera',
+    sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_exif_camera')
+          CREATE INDEX IX_exif_camera ON photo_exif(camera_make, camera_model)`,
+  },
+  {
+    name: 'IX_exif_date',
+    sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_exif_date')
+          CREATE INDEX IX_exif_date ON photo_exif(date_taken_exif)`,
   },
 
   // ── tags + photo_tags ──
@@ -220,6 +237,26 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     name: 'IX_photos_status',
     sql: `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_photos_status')
           CREATE INDEX IX_photos_status ON photos(status) INCLUDE (incident_id, created_at)`,
+  },
+
+  // ── Dashboard aggregation view ──
+  {
+    name: 'v_incident_summary view',
+    sql: `IF NOT EXISTS (SELECT 1 FROM sys.views WHERE name = 'v_incident_summary')
+          EXEC('CREATE VIEW v_incident_summary AS
+          SELECT
+            ISNULL(p.incident_id, ''(No Incident)'') AS incident_id,
+            COUNT(*) AS photo_count,
+            SUM(p.file_size) AS total_size_bytes,
+            COUNT(DISTINCT p.session_id) AS team_count,
+            MIN(p.created_at) AS first_upload,
+            MAX(p.created_at) AS last_upload,
+            SUM(CASE WHEN p.status = ''active'' THEN 1 ELSE 0 END) AS active_count,
+            SUM(CASE WHEN p.status = ''reviewed'' THEN 1 ELSE 0 END) AS reviewed_count,
+            SUM(CASE WHEN p.status = ''flagged'' THEN 1 ELSE 0 END) AS flagged_count,
+            SUM(CASE WHEN p.status = ''archived'' THEN 1 ELSE 0 END) AS archived_count
+          FROM photos p
+          GROUP BY ISNULL(p.incident_id, ''(No Incident)'')')`,
   },
 
   // ── Seed default tags ──

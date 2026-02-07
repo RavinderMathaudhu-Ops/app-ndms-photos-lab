@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     // Fetch all non-expired sessions and compare hashes (bcrypt can't do WHERE)
     const result = await query(
       `SELECT id, pin, team_name FROM upload_sessions
-       WHERE expires_at > GETUTCDATE()`,
+       WHERE expires_at > GETUTCDATE() AND is_active = 1`,
       {}
     )
 

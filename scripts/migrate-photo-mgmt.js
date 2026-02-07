@@ -4,7 +4,7 @@
  * Run via Kudu command API (Azure SQL is VNet-restricted):
  *   1. Upload to App Service via Kudu VFS
  *   2. Copy from /home/tmp to /tmp
- *   3. Run: node migrate.js
+ *   3. Run: node migrate-photo-mgmt.js
  *
  * All statements are idempotent (IF NOT EXISTS / IF COL_LENGTH guards).
  */
@@ -48,6 +48,21 @@ function runQuery(conn, sql) {
 }
 
 const MIGRATIONS = [
+  // ──────────────────────────────────────────────────────────
+  // 0. Pin column + session management prerequisites
+  // ──────────────────────────────────────────────────────────
+  {
+    name: 'pin column resize (NVARCHAR 72 for bcrypt)',
+    sql: `IF (SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_NAME = 'upload_sessions' AND COLUMN_NAME = 'pin') < 72
+         ALTER TABLE upload_sessions ALTER COLUMN pin NVARCHAR(72) NOT NULL`,
+  },
+  {
+    name: 'upload_sessions.is_active column',
+    sql: `IF COL_LENGTH('upload_sessions', 'is_active') IS NULL
+          ALTER TABLE upload_sessions ADD is_active BIT NOT NULL DEFAULT 1`,
+  },
+
   // ──────────────────────────────────────────────────────────
   // 1. Enhanced photos table — new columns
   // ──────────────────────────────────────────────────────────

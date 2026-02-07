@@ -130,12 +130,25 @@ function queryMockDatabase(sql: string, params?: Record<string, any>) {
   
   const sqlUpper = sql.toUpperCase().trim()
   
+  // UPDATE upload_sessions (revoke/reactivate)
+  if (sqlUpper.includes('UPDATE') && sqlUpper.includes('UPLOAD_SESSIONS')) {
+    const sessions = mockDatabase.get('upload_sessions') || []
+    const target = sessions.find((s: any) => s.id === params?.id)
+    if (target) {
+      if (sqlUpper.includes('IS_ACTIVE = 0')) target.is_active = false
+      if (sqlUpper.includes('IS_ACTIVE = 1')) target.is_active = true
+    }
+    mockDatabase.set('upload_sessions', sessions)
+    return { rows: [] }
+  }
+
   // INSERT INTO upload_sessions with OUTPUT
   if (sqlUpper.includes('INSERT INTO') && sqlUpper.includes('UPLOAD_SESSIONS') && sqlUpper.includes('OUTPUT')) {
     const newSession = {
       id: params?.id || Math.random().toString(36).substr(2, 9),
       pin: params?.pinHash || params?.pin,
       team_name: params?.teamName,
+      is_active: true,
       expires_at: params?.expiresAt instanceof Date ? params.expiresAt.toISOString() : String(params?.expiresAt),
       created_at: new Date().toISOString(),
     }
@@ -152,6 +165,7 @@ function queryMockDatabase(sql: string, params?: Record<string, any>) {
       id: params?.id || Math.random().toString(36).substr(2, 9),
       pin: params?.pinHash || params?.pin,
       team_name: params?.teamName,
+      is_active: true,
       expires_at: params?.expiresAt instanceof Date ? params.expiresAt.toISOString() : String(params?.expiresAt),
       created_at: new Date().toISOString(),
     }
@@ -161,10 +175,36 @@ function queryMockDatabase(sql: string, params?: Record<string, any>) {
     return { rows: [] }
   }
 
+  // SELECT FROM upload_sessions with GROUP BY (session list endpoint)
+  if (sqlUpper.includes('SELECT') && sqlUpper.includes('UPLOAD_SESSIONS') && sqlUpper.includes('GROUP BY')) {
+    const sessions = mockDatabase.get('upload_sessions') || []
+    const photos = mockDatabase.get('photos') || []
+    const rows = sessions.map((s: any) => {
+      const sessionPhotos = photos.filter((p: any) => p.session_id === s.id)
+      const now = new Date()
+      let status = 'active'
+      if (s.is_active === false) status = 'revoked'
+      else if (new Date(s.expires_at) < now) status = 'expired'
+      return {
+        id: s.id,
+        team_name: s.team_name,
+        expires_at: s.expires_at,
+        created_at: s.created_at,
+        status,
+        photo_count: sessionPhotos.length,
+        total_size: sessionPhotos.reduce((sum: number, p: any) => sum + (p.file_size || 0), 0),
+      }
+    })
+    rows.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    return { rows }
+  }
+
   // SELECT FROM upload_sessions (all non-expired — bcrypt compare happens in route)
   if (sqlUpper.includes('SELECT') && sqlUpper.includes('UPLOAD_SESSIONS')) {
     const sessions = mockDatabase.get('upload_sessions') || []
-    const filtered = sessions.filter((s: any) => new Date(s.expires_at) > new Date())
+    const filtered = sessions.filter((s: any) =>
+      new Date(s.expires_at) > new Date() && s.is_active !== false
+    )
     return { rows: filtered }
   }
   

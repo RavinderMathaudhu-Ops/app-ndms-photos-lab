@@ -9,6 +9,7 @@ import {
   ImageIcon,
 } from 'lucide-react'
 import PhotoGrid from './components/PhotoGrid'
+import SessionManager from './components/SessionManager'
 import { ToastProvider } from './components/Toast'
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -119,6 +120,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
   const [createError, setCreateError] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [justCreated, setJustCreated] = useState<string | null>(null)
+  const [sessionRefreshKey, setSessionRefreshKey] = useState(0)
 
   const tokenRef = useRef<HTMLInputElement>(null)
   const teamRef = useRef<HTMLInputElement>(null)
@@ -182,6 +184,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
       setPins((prev) => [data, ...prev])
       setJustCreated(data.id)
       setTeamName('')
+      setSessionRefreshKey((k) => k + 1)
       teamRef.current?.focus()
 
       // Auto-clear highlight after 4 seconds
@@ -637,6 +640,13 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
                   </motion.div>
                 )}
               </motion.div>
+
+              {/* ─── Session History ─── */}
+              <SessionManager
+                key={sessionRefreshKey}
+                isEntraAuth={isEntraAuth}
+                storedToken={storedToken}
+              />
             </div>
             )}
           </motion.div>
