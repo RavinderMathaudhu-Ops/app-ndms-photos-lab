@@ -129,6 +129,47 @@ export default function GalleryPage() {
     router.push('/')
   }
 
+  const [fixingBlobs, setFixingBlobs] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+
+  const fixBrokenImages = async () => {
+    setFixingBlobs(true)
+    try {
+      const res = await fetch('/api/photos/fix-blobs', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Fix failed')
+      // Refresh gallery to get new SAS URLs
+      await fetchPhotos(token)
+      setError('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fix failed')
+    } finally {
+      setFixingBlobs(false)
+    }
+  }
+
+  const deleteAllPhotos = async () => {
+    setDeletingAll(true)
+    try {
+      for (const photo of photos) {
+        await fetch(`/api/photos/${photo.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      }
+      setPhotos([])
+      setSelectedIdx(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete all failed')
+    } finally {
+      setDeletingAll(false)
+      setConfirmDeleteAll(false)
+    }
+  }
+
   const deletePhoto = async (photoId: string) => {
     setDeleting(photoId)
     try {
@@ -169,7 +210,7 @@ export default function GalleryPage() {
   if (!token) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]">
       {/* ─── Header ─── */}
       <motion.header
         initial={{ y: -64 }}
@@ -210,31 +251,74 @@ export default function GalleryPage() {
           className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl md:text-4xl font-display tracking-wide uppercase text-slate-800">
+            <h1 className="text-3xl md:text-4xl font-display tracking-wide uppercase text-white">
               Photo Gallery
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-blue-200/50 mt-1">
               {filtered.length} photo{filtered.length !== 1 ? 's' : ''} &bull; {formatBytes(totalSize)}
             </p>
           </div>
 
-          {/* Incident filter */}
-          {incidentIds.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
-              <select
-                value={filterIncident}
-                onChange={(e) => { setFilterIncident(e.target.value); setSelectedIdx(null) }}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white
-                  focus:border-[#155197] focus:ring-2 focus:ring-[#155197]/15 outline-none"
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Incident filter */}
+            {incidentIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-white/40" />
+                <select
+                  value={filterIncident}
+                  onChange={(e) => { setFilterIncident(e.target.value); setSelectedIdx(null) }}
+                  title="Filter by incident"
+                  className="text-sm border border-white/10 rounded-xl px-3 py-2 bg-white/10 text-white
+                    focus:border-white/30 focus:ring-2 focus:ring-white/10 outline-none"
+                >
+                  <option value="">All Incidents</option>
+                  {incidentIds.map((id) => (
+                    <option key={id} value={id}>{id}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Fix broken images */}
+            {photos.length > 0 && (
+              <button
+                type="button"
+                onClick={fixBrokenImages}
+                disabled={fixingBlobs}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl
+                  border border-white/10 bg-white/10 text-white/70 hover:bg-white/20 transition
+                  disabled:opacity-50"
               >
-                <option value="">All Incidents</option>
-                {incidentIds.map((id) => (
-                  <option key={id} value={id}>{id}</option>
-                ))}
-              </select>
-            </div>
-          )}
+                {fixingBlobs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                Fix Previews
+              </button>
+            )}
+
+            {/* Delete all */}
+            {photos.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmDeleteAll) {
+                    deleteAllPhotos()
+                  } else {
+                    setConfirmDeleteAll(true)
+                    setTimeout(() => setConfirmDeleteAll(false), 3000)
+                  }
+                }}
+                disabled={deletingAll}
+                className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl border transition
+                  disabled:opacity-50
+                  ${confirmDeleteAll
+                    ? 'bg-red-500 border-red-500 text-white'
+                    : 'border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/20'
+                  }`}
+              >
+                {deletingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                {confirmDeleteAll ? 'Tap to confirm' : 'Delete All'}
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* ─── Loading ─── */}
@@ -244,8 +328,8 @@ export default function GalleryPage() {
             animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-24 gap-4"
           >
-            <Loader2 className="w-8 h-8 animate-spin text-[#155197]" />
-            <p className="text-slate-400">Loading photos...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-blue-300" />
+            <p className="text-blue-200/50">Loading photos...</p>
           </motion.div>
         )}
 
@@ -254,7 +338,7 @@ export default function GalleryPage() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700"
+            className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-400/20 text-red-300"
           >
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <p className="text-sm">{error}</p>
@@ -268,10 +352,10 @@ export default function GalleryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-24 gap-4"
           >
-            <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center">
-              <ImageIcon className="w-10 h-10 text-slate-300" />
+            <div className="w-20 h-20 rounded-3xl bg-white/[0.07] backdrop-blur-sm border border-white/10 flex items-center justify-center">
+              <ImageIcon className="w-10 h-10 text-white/30" />
             </div>
-            <p className="text-slate-400 text-lg font-medium">No photos yet</p>
+            <p className="text-blue-200/50 text-lg font-medium">No photos yet</p>
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
@@ -297,7 +381,9 @@ export default function GalleryPage() {
                 variants={cardVariant}
                 layoutId={`photo-${photo.id}`}
                 onClick={() => setSelectedIdx(i)}
-                className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group shadow-md hover:shadow-xl transition-shadow"
+                className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group
+                  shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-black/40 transition-shadow
+                  ring-1 ring-white/10"
               >
                 {photo.thumbnailUrl ? (
                   <img
@@ -312,13 +398,13 @@ export default function GalleryPage() {
                         target.src = photo.originalUrl
                       } else {
                         target.style.display = 'none'
-                        target.parentElement?.classList.add('bg-slate-100')
+                        target.parentElement?.classList.add('bg-white/5')
                       }
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                  <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-white/20" />
                   </div>
                 )}
 
@@ -389,6 +475,7 @@ export default function GalleryPage() {
             {/* Close button */}
             <button
               type="button"
+              title="Close lightbox"
               onClick={() => setSelectedIdx(null)}
               className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20
                 flex items-center justify-center text-white transition"
@@ -400,6 +487,7 @@ export default function GalleryPage() {
             {selectedIdx > 0 && (
               <button
                 type="button"
+                title="Previous photo"
                 onClick={(e) => { e.stopPropagation(); setSelectedIdx(selectedIdx - 1) }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full
                   bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
@@ -412,6 +500,7 @@ export default function GalleryPage() {
             {selectedIdx < filtered.length - 1 && (
               <button
                 type="button"
+                title="Next photo"
                 onClick={(e) => { e.stopPropagation(); setSelectedIdx(selectedIdx + 1) }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full
                   bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition
