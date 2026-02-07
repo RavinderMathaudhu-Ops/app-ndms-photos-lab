@@ -406,37 +406,33 @@ export default function PhotoUploadWizard() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#031a36] via-[#062e61] to-[#155197]" />
 
         {/* Hero field image — welcome + success */}
-        <div className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${showHeroField ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 overflow-hidden transition-opacity duration-[1200ms] ease-in-out ${showHeroField ? 'opacity-100' : 'opacity-0'}`}>
           <img
             src="/hero-field.png"
             alt=""
-            className="w-full h-full object-cover animate-ken-burns"
+            className="absolute inset-0 w-full h-full object-cover animate-ken-burns"
           />
-          {/* Vertical gradient */}
-          <div className={`absolute inset-0 transition-all duration-[1200ms] ${
+          {/* Gradient overlay — covers entire viewport, sits above the image */}
+          <div className={`absolute inset-0 z-10 transition-all duration-[1200ms] ${
             step === 'success'
               ? 'bg-gradient-to-b from-[#031a36]/70 via-emerald-950/60 to-[#062e61]'
               : 'bg-gradient-to-b from-[#031a36]/40 via-[#062e61]/60 to-[#062e61]'
           }`} />
-          {/* Edge darkening — right side */}
-          <div className="absolute inset-0 bg-gradient-to-l from-[#031a36]/70 via-[#031a36]/20 to-transparent" />
-          {/* Radial vignette */}
-          <div className="absolute inset-0 hero-vignette" />
+          <div className="absolute inset-0 z-10 bg-gradient-to-l from-[#031a36]/70 via-[#031a36]/20 to-transparent" />
+          <div className="absolute inset-0 z-10 hero-vignette" />
         </div>
 
         {/* Hero collage — PIN step */}
-        <div className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${showHeroCollage ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 overflow-hidden transition-opacity duration-[1200ms] ease-in-out ${showHeroCollage ? 'opacity-100' : 'opacity-0'}`}>
           <img
             src="/hero-collage.png"
             alt=""
-            className="w-full h-full object-cover animate-ken-burns-delayed"
+            className="absolute inset-0 w-full h-full object-cover animate-ken-burns-delayed"
           />
-          {/* Vertical gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#031a36]/60 via-[#062e61]/75 to-[#062e61]" />
-          {/* Edge darkening — right side */}
-          <div className="absolute inset-0 bg-gradient-to-l from-[#031a36]/80 via-[#031a36]/30 to-transparent" />
-          {/* Radial vignette */}
-          <div className="absolute inset-0 hero-vignette" />
+          {/* Gradient overlay — covers entire viewport, sits above the image */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-[#031a36]/60 via-[#062e61]/75 to-[#062e61]" />
+          <div className="absolute inset-0 z-10 bg-gradient-to-l from-[#031a36]/80 via-[#031a36]/30 to-transparent" />
+          <div className="absolute inset-0 z-10 hero-vignette" />
         </div>
       </div>
 
