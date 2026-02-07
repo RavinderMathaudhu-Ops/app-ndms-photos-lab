@@ -2,6 +2,7 @@ import { randomInt, timingSafeEqual } from 'crypto'
 import { query } from '@/lib/db'
 import { rateLimit } from '@/lib/rateLimit'
 import { validation, createAuditLog } from '@/lib/security'
+import { auth } from '@/auth'
 import bcrypt from 'bcryptjs'
 
 const PIN_SALT_ROUNDS = 10
@@ -26,10 +27,31 @@ function safeCompare(a: string, b: string): boolean {
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') || 'unknown'
-    const adminToken = req.headers.get('x-admin-token') || ''
 
-    // Check if caller is admin - timing-safe comparison
-    if (!safeCompare(adminToken, process.env.ADMIN_TOKEN || '')) {
+    // --- Auth check: Entra ID session OR ADMIN_TOKEN fallback ---
+    let isAuthorized = false
+    let authMethod = 'unknown'
+    let adminUser = 'token-auth'
+
+    // 1. Try Auth.js session (Entra ID)
+    const session = await auth()
+    if (session?.user) {
+      isAuthorized = true
+      authMethod = 'entra-id'
+      adminUser = session.user.email || session.user.name || 'entra-user'
+    }
+
+    // 2. Fallback: ADMIN_TOKEN header
+    if (!isAuthorized) {
+      const adminToken = req.headers.get('x-admin-token') || ''
+      if (safeCompare(adminToken, process.env.ADMIN_TOKEN || '')) {
+        isAuthorized = true
+        authMethod = 'admin-token'
+      }
+    }
+
+    // 3. Reject if neither method succeeded
+    if (!isAuthorized) {
       const rateLimitKey = `admin-auth-fail:${ip}`
       const limit = rateLimit(rateLimitKey, {
         maxAttempts: 3,
@@ -38,20 +60,20 @@ export async function POST(req: Request) {
       })
 
       if (!limit.allowed) {
-        console.warn(`⚠️ Suspicious admin token attempts from ${ip}`)
+        console.warn(`⚠️ Suspicious admin auth attempts from ${ip}`)
         const auditLog = createAuditLog('AUTH_FAILURE', req, {
-          reason: 'Invalid admin token - rate limited',
+          reason: 'Invalid admin auth - rate limited',
           attempt: 'Admin API',
         })
         console.warn('SECURITY_ALERT:', auditLog)
-        
+
         return Response.json(
           { error: 'Too many failed authentication attempts' },
           { status: 429 }
         )
       }
 
-      console.warn(`⚠️ Invalid admin token attempt from ${ip}`)
+      console.warn(`⚠️ Invalid admin auth attempt from ${ip}`)
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -99,6 +121,8 @@ export async function POST(req: Request) {
     const auditLog = createAuditLog('PIN_CREATED', req, {
       teamName: teamName || 'Anonymous',
       pin: '***' + pin.slice(-2), // Log last 2 digits only for security
+      authMethod,
+      adminUser,
     })
     console.log('✅ PIN_CREATED:', auditLog)
 

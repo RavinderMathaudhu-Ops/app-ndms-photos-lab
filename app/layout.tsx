@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, Open_Sans } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 import SmoothScroll from "@/components/SmoothScroll";
 import "./globals.css";
 
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${bebasNeue.variable} ${openSans.variable} antialiased`}>
-        <SmoothScroll>{children}</SmoothScroll>
+        <SessionProvider>
+          <SmoothScroll>{children}</SmoothScroll>
+        </SessionProvider>
       </body>
     </html>
   );

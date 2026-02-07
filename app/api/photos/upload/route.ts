@@ -1,21 +1,10 @@
 import { v4 as uuid } from 'uuid'
-import { BlobServiceClient } from '@azure/storage-blob'
 import sharp from 'sharp'
 import { query } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 import { rateLimit } from '@/lib/rateLimit'
 import { validation, createAuditLog, secureErrorResponse } from '@/lib/security'
-
-let blobClient: BlobServiceClient | null = null
-
-function getBlobClient(): BlobServiceClient {
-  if (!blobClient) {
-    blobClient = BlobServiceClient.fromConnectionString(
-      process.env.AZURE_STORAGE_CONNECTION_STRING || ''
-    )
-  }
-  return blobClient
-}
+import { getContainerClient } from '@/lib/blobHelpers'
 
 export async function POST(req: Request) {
   try {
@@ -117,7 +106,7 @@ export async function POST(req: Request) {
 
     // Upload to Azure Blob Storage
     const photoId = uuid()
-    const containerClient = getBlobClient().getContainerClient('aspr-photos')
+    const containerClient = getContainerClient()
 
     // Create container if it doesn't exist
     try {
