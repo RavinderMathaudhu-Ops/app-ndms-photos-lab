@@ -127,6 +127,11 @@ body {
   animation-delay: -8s;
 }
 
+/* Vignette — darkens all edges (especially right), lighter in center-left */
+.hero-vignette {
+  background: radial-gradient(ellipse at 35% 45%, transparent 10%, rgba(3, 26, 54, 0.8) 100%);
+}
+
 /* Lenis smooth scroll */
 html.lenis, html.lenis body {
   height: auto;

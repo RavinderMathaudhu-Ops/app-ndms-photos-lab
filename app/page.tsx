@@ -414,9 +414,10 @@ export default function PhotoUploadWizard() {
           />
           <div className={`absolute inset-0 transition-all duration-[1200ms] ${
             step === 'success'
-              ? 'bg-gradient-to-b from-[#031a36]/60 via-emerald-950/50 to-[#062e61]/95'
-              : 'bg-gradient-to-b from-[#031a36]/30 via-[#062e61]/50 to-[#062e61]/90'
+              ? 'bg-gradient-to-b from-[#031a36]/70 via-emerald-950/60 to-[#062e61]'
+              : 'bg-gradient-to-b from-[#031a36]/40 via-[#062e61]/60 to-[#062e61]'
           }`} />
+          <div className="absolute inset-0 hero-vignette" />
         </div>
 
         {/* Hero collage — PIN step */}
@@ -426,7 +427,8 @@ export default function PhotoUploadWizard() {
             alt=""
             className="w-full h-full object-cover animate-ken-burns-delayed"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#031a36]/50 via-[#062e61]/65 to-[#062e61]/95" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#031a36]/60 via-[#062e61]/75 to-[#062e61]" />
+          <div className="absolute inset-0 hero-vignette" />
         </div>
       </div>
 
