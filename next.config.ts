@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   // Security Headers - OWASP & CIS Compliance
   async headers() {
     return [
+      // Cache static hero images for 7 days (CDN/Front Door)
+      {
+        source: '/hero-:slug.webp',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, immutable' },
+        ],
+      },
       {
         source: '/:path*',
         headers: [
