@@ -320,26 +320,26 @@ export default function AdminDashboard() {
             initial="enter"
             animate="center"
             exit="exit"
-            className="min-h-[calc(100vh-56px)]"
+            className="h-[calc(100vh-56px)] flex flex-col"
           >
-            <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+            <div className="max-w-3xl mx-auto w-full px-4 py-4 space-y-4 flex flex-col flex-1 min-h-0 overflow-auto">
               {/* ─── Create PIN section ─── */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-3xl shadow-lg shadow-black/20 border border-white/10 bg-white/[0.07] backdrop-blur-sm overflow-hidden"
               >
-                <div className="bg-white/[0.05] border-b border-white/10 px-6 py-5">
-                  <h2 className="font-display text-2xl tracking-wide uppercase text-white flex items-center gap-3">
+                <div className="bg-white/[0.05] border-b border-white/10 px-5 py-3">
+                  <h2 className="font-display text-xl tracking-wide uppercase text-white flex items-center gap-3">
                     <Plus className="w-5 h-5" />
                     Create New PIN
                   </h2>
-                  <p className="text-sm text-blue-200/50 mt-1">
+                  <p className="text-xs text-blue-200/50 mt-0.5">
                     Generate access PINs for disaster response field teams
                   </p>
                 </div>
 
-                <form onSubmit={createPin} className="p-6 space-y-4">
+                <form onSubmit={createPin} className="px-5 py-4 space-y-3">
                   <div className="space-y-2">
                     <label htmlFor="teamName" className="text-sm font-semibold text-white/50">
                       Team Name
@@ -351,9 +351,9 @@ export default function AdminDashboard() {
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder="e.g., Urban Search & Rescue, Medical Team 1"
-                      className="w-full px-4 py-3.5 rounded-2xl border border-white/10 bg-white/10
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10
                         focus:border-white/30 focus:ring-2 focus:ring-white/10
-                        outline-none transition text-white placeholder:text-white/30 text-base"
+                        outline-none transition text-white placeholder:text-white/30 text-sm"
                     />
                     <p className="text-xs text-white/30">Leave blank for auto-generated name</p>
                   </div>
@@ -377,8 +377,8 @@ export default function AdminDashboard() {
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-4 rounded-2xl bg-white text-[#062e61]
-                      font-semibold text-lg shadow-lg shadow-black/20
+                    className="w-full py-3 rounded-xl bg-white text-[#062e61]
+                      font-semibold text-base shadow-lg shadow-black/20
                       flex items-center justify-center gap-2
                       disabled:opacity-60 disabled:cursor-not-allowed transition"
                   >
@@ -421,7 +421,7 @@ export default function AdminDashboard() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex flex-col items-center py-16 gap-3"
+                    className="flex flex-col items-center py-8 gap-3"
                   >
                     <div className="w-16 h-16 rounded-2xl bg-white/[0.07] border border-white/10 flex items-center justify-center">
                       <Key className="w-8 h-8 text-white/20" />

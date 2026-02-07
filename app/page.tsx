@@ -50,20 +50,19 @@ const stagger = {
 }
 
 const slideUp = {
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 8 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: EASE_OUT },
+    transition: { duration: 0.4, ease: EASE_OUT },
   },
 }
 
 const popIn = {
-  initial: { scale: 0.85, opacity: 0 },
+  initial: { opacity: 0 },
   animate: {
-    scale: 1,
     opacity: 1,
-    transition: { duration: 0.25, ease: EASE_OUT },
+    transition: { duration: 0.35, ease: EASE_OUT },
   },
 }
 
