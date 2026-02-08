@@ -571,7 +571,7 @@ export default function PhotoUploadWizard() {
                 <img
                   src="/aspr-logo-white.png"
                   alt="ASPR"
-                  className="h-14 md:h-16 lg:h-20 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
+                  className="h-16 md:h-20 lg:h-24 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
                 />
               </motion.div>
 

@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Copy, Plus, LogOut, Lock, Key, Shield, CheckCircle2,
-  AlertCircle, Loader2, Users, Clock, ChevronRight,
-  ImageIcon,
+  LogOut, Lock, Key, Shield, ChevronRight,
+  AlertCircle, Loader2, ImageIcon,
 } from 'lucide-react'
 import PhotoGrid from './components/PhotoGrid'
+import PinCreation from './components/PinCreation'
+import ActivePins from './components/ActivePins'
 import SessionManager from './components/SessionManager'
 import { ToastProvider } from './components/Toast'
 
@@ -55,15 +56,6 @@ const popIn = {
   animate: {
     opacity: 1,
     transition: { duration: 0.35, ease: EASE_OUT },
-  },
-}
-
-const cardPop = {
-  initial: { opacity: 0, y: 20 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: EASE_OUT },
   },
 }
 
@@ -114,16 +106,11 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
   const [activeTab, setActiveTab] = useState<AdminTab>('pins')
 
   // Dashboard state
-  const [teamName, setTeamName] = useState('')
   const [pins, setPins] = useState<PinEntry[]>([])
-  const [loading, setLoading] = useState(false)
-  const [createError, setCreateError] = useState('')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [justCreated, setJustCreated] = useState<string | null>(null)
   const [sessionRefreshKey, setSessionRefreshKey] = useState(0)
 
   const tokenRef = useRef<HTMLInputElement>(null)
-  const teamRef = useRef<HTMLInputElement>(null)
 
   // Auto-advance to dashboard when Entra ID session exists
   useEffect(() => {
@@ -137,7 +124,6 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
 
   useEffect(() => {
     if (step === 'login' && !entraIdConfigured) tokenRef.current?.focus()
-    if (step === 'dashboard') teamRef.current?.focus()
   }, [step, entraIdConfigured])
 
   /* ───── Login ──────────────────────────────── */
@@ -153,54 +139,12 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
     setAdminToken('')
   }
 
-  /* ───── Create PIN ─────────────────────────── */
-  const createPin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setCreateError('')
-    setJustCreated(null)
-
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      // Only send x-admin-token when using fallback auth
-      if (!isEntraAuth) {
-        headers['x-admin-token'] = storedToken
-      }
-
-      const res = await fetch('/api/auth/create-session', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ teamName: teamName.trim() || 'Team ' + Date.now() }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to create PIN')
-      }
-
-      const data = await res.json()
-      setPins((prev) => [data, ...prev])
-      setJustCreated(data.id)
-      setTeamName('')
-      setSessionRefreshKey((k) => k + 1)
-      teamRef.current?.focus()
-
-      // Auto-clear highlight after 4 seconds
-      setTimeout(() => setJustCreated(null), 4000)
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create PIN')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  /* ───── Copy PIN ───────────────────────────── */
-  const copyPin = async (pin: string, id: string) => {
-    await navigator.clipboard.writeText(pin)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+  /* ───── PIN Created callback ──────────────── */
+  const handlePinCreated = (data: PinEntry) => {
+    setPins((prev) => [data, ...prev])
+    setJustCreated(data.id)
+    setSessionRefreshKey((k) => k + 1)
+    setTimeout(() => setJustCreated(null), 4000)
   }
 
   /* ───── Logout ─────────────────────────────── */
@@ -319,7 +263,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
                 <img
                   src="/aspr-logo-white.png"
                   alt="ASPR"
-                  className="h-20 md:h-24 lg:h-28 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
+                  className="h-16 md:h-20 lg:h-24 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
                 />
               </motion.div>
 
@@ -434,219 +378,25 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
 
             {/* ─── PINs tab ─── */}
             {activeTab === 'pins' && (
-            <div className="max-w-4xl mx-auto w-full px-4 py-4 space-y-4 flex flex-col flex-1 min-h-0 overflow-auto">
-              {/* ─── Create PIN section ─── */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl shadow-lg shadow-black/20 border border-white/10 bg-white/[0.07] backdrop-blur-sm overflow-hidden"
-              >
-                <div className="bg-white/[0.05] border-b border-white/10 px-5 py-3">
-                  <h2 className="font-display text-xl tracking-wide uppercase text-white flex items-center gap-3">
-                    <Plus className="w-5 h-5" />
-                    Create New PIN
-                  </h2>
-                  <p className="text-xs text-blue-200/50 mt-0.5">
-                    Generate access PINs for disaster response field teams
-                  </p>
-                </div>
+            <div className="max-w-7xl mx-auto w-full px-4 py-4 flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+              {/* Left column: Create PIN + Active PINs */}
+              <div className="lg:w-[400px] xl:w-[440px] shrink-0 space-y-4 overflow-y-auto lg:max-h-full">
+                <PinCreation
+                  isEntraAuth={isEntraAuth}
+                  storedToken={storedToken}
+                  onPinCreated={handlePinCreated}
+                />
+                <ActivePins pins={pins} justCreated={justCreated} />
+              </div>
 
-                <form onSubmit={createPin} className="px-5 py-4 space-y-3">
-                  <div className="space-y-2">
-                    <label htmlFor="teamName" className="text-sm font-semibold text-white/50">
-                      Team Name
-                    </label>
-                    <input
-                      ref={teamRef}
-                      id="teamName"
-                      type="text"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      placeholder="e.g., Urban Search & Rescue, Medical Team 1"
-                      className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/10
-                        focus:border-white/30 focus:ring-2 focus:ring-white/10
-                        outline-none transition text-white placeholder:text-white/30 text-sm"
-                    />
-                    <p className="text-xs text-white/30">Leave blank for auto-generated name</p>
-                  </div>
-
-                  <AnimatePresence>
-                    {createError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2 text-red-400 text-sm"
-                      >
-                        <AlertCircle className="w-4 h-4" />
-                        {createError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileHover={{ y: -1 }}
-                    whileTap={{ y: 0 }}
-                    className="w-full py-3 rounded-lg bg-white/90 backdrop-blur-sm text-[#062e61]
-                      font-semibold text-sm border border-white/30
-                      shadow-[0_0_15px_rgba(255,255,255,0.06)]
-                      flex items-center justify-center gap-2
-                      disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Creating PIN...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5" />
-                        Generate PIN
-                      </>
-                    )}
-                  </motion.button>
-                </form>
-              </motion.div>
-
-              {/* ─── Active PINs ─── */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-xl tracking-wide uppercase text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-blue-300/60" />
-                    Active PINs
-                  </h2>
-                  {pins.length > 0 && (
-                    <span className="text-xs font-semibold bg-white/10 text-white/60 px-3 py-1 rounded-full">
-                      {pins.length} PIN{pins.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-
-                {/* Empty state */}
-                {pins.length === 0 && !loading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center py-8 gap-3"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-white/[0.07] border border-white/10 flex items-center justify-center">
-                      <Key className="w-8 h-8 text-white/20" />
-                    </div>
-                    <p className="text-white/40 font-medium">No PINs created yet</p>
-                    <p className="text-xs text-white/25">Create a PIN above to get started</p>
-                  </motion.div>
-                )}
-
-                {/* PIN cards */}
-                <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-3">
-                  <AnimatePresence>
-                    {pins.map((pin) => (
-                      <motion.div
-                        key={pin.id}
-                        variants={cardPop}
-                        layout
-                        className={`rounded-2xl border overflow-hidden bg-white/[0.07] backdrop-blur-sm
-                          transition-all duration-500 shadow-lg shadow-black/20
-                          ${justCreated === pin.id
-                            ? 'border-emerald-400/40 ring-2 ring-emerald-400/20'
-                            : 'border-white/10'
-                          }`}
-                      >
-                        <div className="p-4 flex items-center gap-4">
-                          {/* PIN display */}
-                          <div className="relative">
-                            <div className={`px-5 py-3 rounded-xl font-mono font-bold text-xl tracking-[0.2em]
-                              transition-colors duration-500
-                              ${justCreated === pin.id
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : 'bg-white/10 text-white'
-                              }`}>
-                              {pin.pin}
-                            </div>
-                            {justCreated === pin.id && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500
-                                  flex items-center justify-center"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                              </motion.div>
-                            )}
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white truncate">
-                              {pin.team_name}
-                            </p>
-                            <p className="text-xs text-white/40 flex items-center gap-1.5 mt-0.5">
-                              <Clock className="w-3 h-3" />
-                              Expires in 48 hours
-                            </p>
-                          </div>
-
-                          {/* Copy button */}
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.08 }}
-                            whileTap={{ scale: 0.92 }}
-                            onClick={() => copyPin(pin.pin, pin.id)}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
-                              ${copiedId === pin.id
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'
-                              }`}
-                            title="Copy PIN to clipboard"
-                          >
-                            {copiedId === pin.id ? (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: 'spring' as const, stiffness: 500, damping: 15 }}
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                              </motion.div>
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Security note */}
-                {pins.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-400/20"
-                  >
-                    <Shield className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-200/80 leading-relaxed">
-                      Share PINs with team members via a secure channel only. Each PIN provides
-                      upload access for 48 hours. PINs cannot be recovered after creation.
-                    </p>
-                  </motion.div>
-                )}
-              </motion.div>
-
-              {/* ─── Session History ─── */}
-              <SessionManager
-                key={sessionRefreshKey}
-                isEntraAuth={isEntraAuth}
-                storedToken={storedToken}
-              />
+              {/* Right column: Session History (own scrollable container) */}
+              <div className="flex-1 min-h-0 flex flex-col min-w-0">
+                <SessionManager
+                  key={sessionRefreshKey}
+                  isEntraAuth={isEntraAuth}
+                  storedToken={storedToken}
+                />
+              </div>
             </div>
             )}
           </motion.div>
