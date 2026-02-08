@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | System Name | ASPR Photo Repository |
-| Document Version | 1.1 |
+| Document Version | 2.0 |
 | Last Updated | 2026-02-07 |
 | Owner | HHS ASPR / Leidos |
 
@@ -15,14 +15,14 @@
 
 ### 1.1 What Is the ASPR Photo Repository?
 
-The ASPR Photo Repository is a secure web application that allows Administration for Strategic Preparedness and Response (ASPR) field teams to upload, manage, and review disaster-related photographs during incident response operations. Photos can be tagged with GPS coordinates, incident IDs, and descriptive notes.
+The ASPR Photo Repository is a secure web application that allows Administration for Strategic Preparedness and Response (ASPR) field teams to upload, manage, and review disaster-related photographs during incident response operations. Photos can be tagged with GPS coordinates, incident IDs, and descriptive notes. Administrators have access to a full photo management dashboard for review, tagging, editing, bulk operations, and audit tracking.
 
 ### 1.2 Who Is This Guide For?
 
 | User Role | Sections |
 |---|---|
 | **Field Team Members** | Sections 2–5 (Login, Photo Upload, Gallery, Tips) |
-| **Administrators** | Sections 6–7 (Admin Dashboard, CLI Tools) |
+| **Administrators** | Sections 6–8 (Admin Dashboard, Photo Management, Session Management) |
 
 ### 1.3 Browser Requirements
 
@@ -41,13 +41,7 @@ The application is mobile-responsive and optimized for field use on smartphones 
 
 ### 2.1 Accessing the Application
 
-Navigate to the application URL provided by your administrator:
-
-```
-https://app-aspr-photos-lab.azurewebsites.net
-```
-
-You will see the welcome screen with ASPR branding and a "Get Started" button.
+Navigate to the application URL provided by your administrator. You will see a branded loading sequence (the ASPR eagle logo with an animated reveal) followed by the welcome screen with hero imagery and a "Get Started" button.
 
 ### 2.2 Login Options
 
@@ -103,7 +97,7 @@ After logging in:
 
 ### 3.1 Step 1: Select Photos
 
-1. After PIN login, you will see the **photo selection** screen
+1. After login, you will see the **photo selection** screen
 2. Tap the **camera/upload area** to:
    - **Take a photo** using your device camera (mobile)
    - **Select files** from your device (desktop or mobile)
@@ -212,18 +206,149 @@ Navigate to `/gallery` or tap **View Gallery** after uploading. The gallery show
 
 1. Navigate to `/admin`
 2. Sign in with your **HHS Entra ID credentials** (you must be a member of the ASPR Photo Admins security group)
-3. If Entra ID is not configured, enter the **admin authentication token** provided by system operations and tap **Authenticate**
+3. If Entra ID is not configured, enter the **admin authentication token** provided by system operations
 
-### 6.2 Creating a PIN
+### 6.2 Dashboard Overview
 
-1. After authentication, you will see the PIN creation dashboard
+After authentication, you will see two main tabs:
+
+| Tab | Purpose |
+|---|---|
+| **Sessions** | Create PINs, manage upload sessions, view team activity |
+| **Photos** | Full photo management grid with filtering, tagging, editing, and bulk operations |
+
+### 6.3 Dashboard Stats
+
+The top of the Photos tab displays summary statistics:
+
+| Stat | Description |
+|---|---|
+| **Total Photos** | Count of all photos in the system |
+| **Total Incidents** | Count of distinct incident IDs |
+| **Daily Uploads** | Photos uploaded in the last 24 hours |
+| **Top Teams** | Most active upload teams |
+
+---
+
+## 7. Photo Management (Admin)
+
+### 7.1 Photo Grid
+
+The photo management grid displays all photos in the system (not just your session). Features include:
+
+| Feature | Description |
+|---|---|
+| **Virtual Scroll** | Efficiently loads thousands of photos without performance issues |
+| **Cursor Pagination** | Loads more photos as you scroll down |
+| **Search** | Search by filename, notes, or incident ID |
+| **Sort** | Sort by date (newest/oldest), file size, or filename |
+
+### 7.2 Filtering Photos
+
+Use the filter bar above the grid to narrow results:
+
+| Filter | Description |
+|---|---|
+| **Search** | Free-text search across filenames, notes, incident IDs |
+| **Incident** | Filter by specific incident ID |
+| **Status** | Filter by photo status (pending, reviewed, approved, flagged) |
+| **Date Range** | Filter by upload date (from/to) |
+| **Tags** | Filter by assigned tags |
+
+### 7.3 Photo Detail Sidebar
+
+Click any photo in the grid to open the detail sidebar:
+
+| Section | What It Shows |
+|---|---|
+| **Preview** | Full-size photo preview |
+| **Metadata** | Filename, size, dimensions, MIME type, upload date |
+| **EXIF Data** | Camera make/model, focal length, aperture, ISO, date taken |
+| **Location** | GPS coordinates, location name (if available) |
+| **Tags** | Assigned tags with category badges |
+| **Notes** | User-provided notes (editable) |
+| **Session** | Team name and session ID that uploaded the photo |
+
+From the sidebar, you can:
+- **Edit metadata** — Update status, notes, incident ID, location name
+- **Add/remove tags** — Assign tags from existing categories or create new ones
+- **Download original** — Download the full-resolution image
+- **Delete** — Permanently remove the photo (with confirmation)
+
+### 7.4 Tag System
+
+Tags help organize and categorize photos. Each tag has a name and an optional category:
+
+| Category | Purpose | Examples |
+|---|---|---|
+| **status** | Photo review status | Pending, Reviewed, Approved, Rejected |
+| **priority** | Urgency level | High, Medium, Low |
+| **type** | Content classification | Structural Damage, Flooding, Infrastructure, Personnel |
+| **timeline** | Temporal classification | Before, During, After |
+| **custom** | User-defined | Any custom label |
+
+To manage tags:
+1. Click a photo to open the detail sidebar
+2. In the Tags section, type to search existing tags or create new ones
+3. Tags are displayed as colored badges based on their category
+
+### 7.5 Bulk Operations
+
+Select multiple photos to perform bulk actions:
+
+1. **Select photos** — Click the checkbox on each photo, or use "Select All" to select all visible photos
+2. **Bulk action bar** — A floating toolbar appears at the bottom of the screen showing the count of selected photos
+3. **Available actions:**
+
+| Action | Description |
+|---|---|
+| **Bulk Delete** | Delete all selected photos (with confirmation) |
+| **Bulk Tag** | Assign a tag to all selected photos |
+| **Bulk Status** | Change the status of all selected photos |
+| **Bulk Download** | Download selected photos as a ZIP file |
+
+**Bulk Download** generates signed URLs for each selected photo and downloads them as a client-side ZIP archive.
+
+### 7.6 Photo Editor
+
+The built-in photo editor allows non-destructive editing of photos:
+
+1. Open a photo in the detail sidebar
+2. Click **Edit Photo** to launch the editor
+3. Available tools:
+
+| Tool | Description |
+|---|---|
+| **Crop** | Crop to custom aspect ratio or preset ratios |
+| **Rotate** | Rotate 90° clockwise/counterclockwise |
+| **Annotate** | Draw arrows, circles, text labels on the photo |
+
+4. Click **Save** to create an edited version (original is preserved)
+5. Edit history is tracked in the `photo_edits` table
+
+### 7.7 Admin Upload
+
+Administrators can upload photos directly from the dashboard:
+
+1. In the Photos tab, click **Upload Photos**
+2. Drag and drop files or click to browse
+3. Add metadata (incident ID, notes, GPS)
+4. Uploads are tracked as an admin batch (source: "admin")
+
+---
+
+## 8. Session Management (Admin)
+
+### 8.1 Creating a PIN
+
+1. Go to the **Sessions** tab
 2. Optionally enter a **Team Name** (e.g., "Alpha Team", "FEMA Region 4")
    - If left blank, the team name defaults to "Anonymous"
 3. Tap **Generate New PIN**
 4. A new 6-digit PIN will be displayed
 5. **Copy the PIN immediately** — it is shown only once and cannot be retrieved later
 
-### 6.3 PIN Details
+### 8.2 PIN Details
 
 | Property | Value |
 |---|---|
@@ -232,7 +357,28 @@ Navigate to `/gallery` or tap **View Gallery** after uploading. The gallery show
 | Sharing | One PIN can be shared with multiple team members |
 | Storage | PIN is stored as a bcrypt hash — plaintext is not recoverable |
 
-### 6.4 PIN Distribution
+### 8.3 Viewing Sessions
+
+The Sessions tab shows all upload sessions:
+
+| Column | Description |
+|---|---|
+| **Team Name** | Name assigned when PIN was created |
+| **Created** | When the session was created |
+| **Expires** | When the PIN expires |
+| **Status** | Active or Expired |
+| **Photo Count** | Number of photos uploaded in this session |
+
+### 8.4 Revoking a Session
+
+To immediately deactivate a session (e.g., if a PIN is compromised):
+
+1. Find the session in the Sessions tab
+2. Click **Revoke**
+3. The session is marked inactive — the PIN will no longer work
+4. Photos already uploaded are not affected
+
+### 8.5 PIN Distribution
 
 - Communicate the PIN to field teams **verbally or via secure channel**
 - Do not send PINs via unencrypted email
@@ -241,33 +387,26 @@ Navigate to `/gallery` or tap **View Gallery** after uploading. The gallery show
 
 ---
 
-## 7. Admin CLI Tool
+## 9. Audit Trail (Admin)
 
-### 7.1 Overview
+All administrative actions are logged in an immutable audit trail. The audit log records:
 
-For administrators who prefer command-line tools, the `scripts/admin-cli.js` utility provides PIN management capabilities.
+| Field | Description |
+|---|---|
+| **Action** | What was done (create, update, delete, bulk_delete, etc.) |
+| **Entity** | What was affected (photo, session, tag, migration) |
+| **Performed By** | Admin email (Entra ID) or "token" (fallback auth) |
+| **IP Address** | Client IP address |
+| **Timestamp** | When the action occurred |
+| **Details** | JSON details specific to the action |
 
-### 7.2 Usage
-
-```bash
-# Create a new PIN with default team name
-node scripts/admin-cli.js create
-
-# Create a PIN with custom team name
-node scripts/admin-cli.js create --team "Hurricane Response Team"
-```
-
-### 7.3 Requirements
-
-- Node.js 22+ installed
-- `ADMIN_TOKEN` environment variable set (or passed via `--token` flag)
-- Network access to the application API endpoint
+The audit log cannot be modified or deleted. It provides a complete record of all administrative activity for compliance and accountability.
 
 ---
 
-## 8. Troubleshooting
+## 10. Troubleshooting
 
-### 8.1 Common Issues
+### 10.1 Common Issues
 
 | Problem | Solution |
 |---|---|
@@ -278,17 +417,20 @@ node scripts/admin-cli.js create --team "Hurricane Response Team"
 | GPS not working | Allow location access in browser settings |
 | Page won't load | Check internet connection; try a different browser |
 | Session expired | Log in again with your PIN (if still valid) |
+| Admin login fails | Verify you are in the ASPR Photo Admins security group, or check admin token |
+| Bulk download slow | Large selections may take time; try smaller batches |
 
-### 8.2 Getting Help
+### 10.2 Getting Help
 
 Contact your system administrator or the ASPR IT support desk for assistance with:
 - PIN generation and distribution
 - Application access issues
 - Technical problems with uploads
+- Admin dashboard questions
 
 ---
 
-## 9. Document Approval
+## 11. Document Approval
 
 | Role | Name | Signature | Date |
 |---|---|---|---|
@@ -301,3 +443,4 @@ Contact your system administrator or the ASPR IT support desk for assistance wit
 |---|---|---|---|
 | 1.0 | 2026-02-07 | HHS ASPR / Leidos | Initial user guide |
 | 1.1 | 2026-02-07 | HHS ASPR / Leidos | Added SSO login options (HHS Entra ID, Login.gov, ID.me); updated admin authentication |
+| 2.0 | 2026-02-07 | HHS ASPR / Leidos | Post Phase 6 deployment: full admin photo management guide (grid, detail sidebar, filtering, sorting, tag system, bulk operations, photo editor, admin upload); session management (view, revoke); audit trail; logo preloader description; expanded dashboard overview with stats |

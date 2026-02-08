@@ -75,7 +75,7 @@ def styled_table(doc, headers, rows, col_widths=None):
 
     for ri, row_data in enumerate(rows):
         row = table.rows[ri + 1]
-        for ci, text in enumerate(row_data):
+        for ci, text in enumerate(row_data[:ncols]):
             cell = row.cells[ci]
             if ri % 2 == 1:
                 set_cell_shading(cell, LIGHT_GRAY_HEX)
