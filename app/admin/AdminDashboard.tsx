@@ -241,13 +241,13 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
           transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
           className="sticky top-0 z-50 bg-gradient-to-r from-[#062e61] to-[#155197] text-white shadow-2xl shadow-[#062e61]/30"
         >
-          <div className={`${activeTab === 'photos' ? 'max-w-7xl' : 'max-w-3xl'} mx-auto px-4`}>
+          <div className="max-w-7xl mx-auto px-4">
             {/* Top row: logo + logout */}
             <div className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
-                <img src="/aspr-logo-white.png" alt="ASPR" className="h-8 w-auto" />
-                <div className="h-5 w-px bg-white/25" />
-                <span className="font-display text-lg tracking-wide uppercase">Admin Portal</span>
+                <img src="/aspr-logo-white.png" alt="ASPR" className="h-12 w-auto drop-shadow-[0_0_12px_rgba(21,81,151,0.4)]" />
+                <div className="h-6 w-px bg-white/25" />
+                <span className="font-display text-xl tracking-wide uppercase">Admin Portal</span>
               </div>
               <button
                 type="button"
@@ -311,7 +311,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
                 <img
                   src="/hhs_longlogo_white.png"
                   alt="U.S. Department of Health and Human Services"
-                  className="h-16 md:h-20 lg:h-24 mx-auto opacity-50"
+                  className="h-20 md:h-24 lg:h-28 mx-auto opacity-50"
                 />
               </motion.div>
 
@@ -319,7 +319,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
                 <img
                   src="/aspr-logo-white.png"
                   alt="ASPR"
-                  className="h-16 md:h-20 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
+                  className="h-20 md:h-24 lg:h-28 mx-auto drop-shadow-[0_0_30px_rgba(21,81,151,0.5)]"
                 />
               </motion.div>
 
@@ -434,7 +434,7 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
 
             {/* ─── PINs tab ─── */}
             {activeTab === 'pins' && (
-            <div className="max-w-3xl mx-auto w-full px-4 py-4 space-y-4 flex flex-col flex-1 min-h-0 overflow-auto">
+            <div className="max-w-4xl mx-auto w-full px-4 py-4 space-y-4 flex flex-col flex-1 min-h-0 overflow-auto">
               {/* ─── Create PIN section ─── */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

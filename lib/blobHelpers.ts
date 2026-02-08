@@ -4,9 +4,11 @@ let blobClient: BlobServiceClient | null = null
 
 export function getBlobClient(): BlobServiceClient {
   if (!blobClient) {
-    blobClient = BlobServiceClient.fromConnectionString(
-      process.env.AZURE_STORAGE_CONNECTION_STRING || ''
-    )
+    const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING
+    if (!connStr || connStr.includes('<PASTE') || connStr.length < 20) {
+      throw new Error('Azure Storage connection string is not configured')
+    }
+    blobClient = BlobServiceClient.fromConnectionString(connStr)
   }
   return blobClient
 }

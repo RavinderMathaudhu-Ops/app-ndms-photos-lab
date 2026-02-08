@@ -51,6 +51,7 @@ export default function PhotoDetailSidebar({
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   // Editable fields
   const [editStatus, setEditStatus] = useState(photo.status)
@@ -116,6 +117,7 @@ export default function PhotoDetailSidebar({
 
   const handleSave = async () => {
     setSaving(true)
+    setErrorMsg(null)
     try {
       const res = await fetch(`/api/admin/photos/${photo.id}`, {
         method: 'PATCH',
@@ -129,7 +131,7 @@ export default function PhotoDetailSidebar({
       })
 
       if (!res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }))
         throw new Error(data.error || 'Update failed')
       }
 
@@ -142,8 +144,9 @@ export default function PhotoDetailSidebar({
         updated_at: new Date().toISOString(),
       })
       setEditing(false)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Update failed:', err)
+      setErrorMsg(err.message || 'Failed to update photo')
     } finally {
       setSaving(false)
     }
@@ -151,15 +154,21 @@ export default function PhotoDetailSidebar({
 
   const handleDelete = async () => {
     setDeleting(true)
+    setErrorMsg(null)
     try {
       const res = await fetch(`/api/admin/photos/${photo.id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }))
+        throw new Error(data.error || `Delete failed (${res.status})`)
+      }
       onDeleted(photo.id)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete failed:', err)
+      setErrorMsg(err.message || 'Failed to delete photo')
+      setConfirmDelete(false)
     } finally {
       setDeleting(false)
     }
@@ -478,6 +487,19 @@ export default function PhotoDetailSidebar({
           </>
         )}
       </div>
+
+      {/* Error message */}
+      {errorMsg && (
+        <div className="mx-4 mb-3 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/15 border border-red-400/25 text-red-300 text-xs">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">{errorMsg}</p>
+            <button type="button" onClick={() => setErrorMsg(null)} className="text-red-400/60 hover:text-red-300 mt-1 underline">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Photo editor modal */}
       <AnimatePresence>

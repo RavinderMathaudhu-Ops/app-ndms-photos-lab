@@ -212,8 +212,9 @@ export default function PhotoGrid({ isEntraAuth, storedToken }: PhotoGridProps) 
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 230, // Estimated row height (4:3 thumb + info)
+    estimateSize: () => 320, // Conservative estimate; measureElement refines it
     overscan: 3,
+    gap: 12, // matches Tailwind gap-3 (0.75rem = 12px)
   })
 
   /* ───── Infinite scroll (grid mode) ──────────── */
@@ -407,12 +408,13 @@ export default function PhotoGrid({ isEntraAuth, storedToken }: PhotoGridProps) 
                   return (
                     <div
                       key={virtualRow.key}
+                      ref={virtualizer.measureElement}
+                      data-index={virtualRow.index}
                       style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         width: '100%',
-                        height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                       >
