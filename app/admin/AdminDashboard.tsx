@@ -5,13 +5,18 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LogOut, Lock, Key, Shield, ChevronRight,
-  AlertCircle, Loader2, ImageIcon,
+  AlertCircle, Loader2, ImageIcon, User,
 } from 'lucide-react'
 import PhotoGrid from './components/PhotoGrid'
 import PinCreation from './components/PinCreation'
 import ActivePins from './components/ActivePins'
 import SessionManager from './components/SessionManager'
 import { ToastProvider } from './components/Toast'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 /* ─── Types ──────────────────────────────────────────── */
 type Step = 'login' | 'dashboard'
@@ -193,13 +198,70 @@ export default function AdminDashboard({ entraIdConfigured }: AdminDashboardProp
                 <div className="h-6 w-px bg-white/25" />
                 <span className="font-display text-xl tracking-wide uppercase">Admin Portal</span>
               </div>
-              <button
-                type="button"
-                onClick={logout}
-                className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition"
-              >
-                <LogOut className="w-4 h-4" /> Logout
-              </button>
+              {isEntraAuth && session?.user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3
+                        hover:bg-white/[0.08] transition-colors focus:outline-none"
+                    >
+                      <Avatar size="default">
+                        {session.user.image && (
+                          <AvatarImage src={session.user.image} alt={session.user.name ?? ''} />
+                        )}
+                        <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
+                          {(session.user.name ?? '?')
+                            .split(/[\s,]+/)
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((w) => w[0]?.toUpperCase())
+                            .join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-white/80 font-medium hidden sm:block max-w-[160px] truncate">
+                        {session.user.name}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex items-center gap-3 py-1">
+                        <Avatar size="lg">
+                          {session.user.image && (
+                            <AvatarImage src={session.user.image} alt={session.user.name ?? ''} />
+                          )}
+                          <AvatarFallback className="bg-slate-200 text-slate-600 text-sm font-semibold">
+                            {(session.user.name ?? '?')
+                              .split(/[\s,]+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((w) => w[0]?.toUpperCase())
+                              .join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{session.user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 cursor-pointer">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition"
+                >
+                  <LogOut className="w-4 h-4" /> Logout
+                </button>
+              )}
             </div>
 
             {/* Tab navigation */}

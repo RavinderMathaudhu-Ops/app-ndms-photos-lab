@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
     turbopackUseSystemTlsCerts: true,
   },
 
+  // Pin tailwindcss resolution to project node_modules (prevents Turbopack
+  // from walking up to the parent directory and failing to resolve)
+  turbopack: {
+    resolveAlias: {
+      tailwindcss: 'tailwindcss/index.css',
+    },
+  },
+
   // Security Headers - OWASP & CIS Compliance
   async headers() {
     return [

@@ -25,6 +25,17 @@
   /* Theme Colors */
   --background: #ffffff;
   --foreground: var(--aspr-gray-dark);
+
+  /* shadcn/ui semantic tokens */
+  --popover: #ffffff;
+  --popover-foreground: var(--aspr-gray-dark);
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: var(--aspr-gray-dark);
+  --border: #e2e8f0;
+  --ring: var(--aspr-blue-primary);
+  --radius: 0.5rem;
 }
 
 @theme inline {
@@ -32,7 +43,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-opensans), 'Open Sans', Arial, Helvetica, sans-serif;
   --font-display: var(--font-bebas), 'Bebas Neue', Impact, sans-serif;
-  
+
   /* ASPR Brand Colors for Tailwind */
   --color-aspr-blue-primary: var(--aspr-blue-primary);
   --color-aspr-blue-dark: var(--aspr-blue-dark);
@@ -44,12 +55,34 @@
   --color-aspr-red-light: var(--aspr-red-light);
   --color-aspr-gray-dark: var(--aspr-gray-dark);
   --color-aspr-gray-light: var(--aspr-gray-light);
+
+  /* shadcn/ui semantic colors for Tailwind v4 */
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: var(--aspr-blue-dark);
     --foreground: #ffffff;
+  }
+}
+
+/* shadcn/ui base layer — required for component defaults */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
   }
 }
 
