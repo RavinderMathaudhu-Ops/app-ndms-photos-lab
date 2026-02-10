@@ -6,26 +6,52 @@ export async function GET(req: Request) {
   if (error) return error
 
   try {
-    const result = await query(
-      `SELECT
-         s.id,
-         s.team_name,
-         s.expires_at,
-         s.created_at,
-         s.last_used_at,
-         ISNULL(s.total_uploads, 0) AS total_uploads,
-         CASE
-           WHEN s.is_active = 0 THEN 'revoked'
-           WHEN s.expires_at < GETUTCDATE() THEN 'expired'
-           ELSE 'active'
-         END AS status,
-         COUNT(p.id) AS photo_count,
-         ISNULL(SUM(p.file_size), 0) AS total_size
-       FROM upload_sessions s
-       LEFT JOIN photos p ON p.session_id = s.id
-       GROUP BY s.id, s.team_name, s.expires_at, s.created_at, s.is_active, s.last_used_at, s.total_uploads
-       ORDER BY s.created_at DESC`
-    )
+    // Try query with usage-tracking columns; fall back if migration hasn't run yet
+    let result
+    try {
+      result = await query(
+        `SELECT
+           s.id,
+           s.team_name,
+           s.expires_at,
+           s.created_at,
+           s.last_used_at,
+           ISNULL(s.total_uploads, 0) AS total_uploads,
+           CASE
+             WHEN s.is_active = 0 THEN 'revoked'
+             WHEN s.expires_at < GETUTCDATE() THEN 'expired'
+             ELSE 'active'
+           END AS status,
+           COUNT(p.id) AS photo_count,
+           ISNULL(SUM(p.file_size), 0) AS total_size
+         FROM upload_sessions s
+         LEFT JOIN photos p ON p.session_id = s.id
+         GROUP BY s.id, s.team_name, s.expires_at, s.created_at, s.is_active, s.last_used_at, s.total_uploads
+         ORDER BY s.created_at DESC`
+      )
+    } catch {
+      // Fallback: columns don't exist yet (pre-migration)
+      result = await query(
+        `SELECT
+           s.id,
+           s.team_name,
+           s.expires_at,
+           s.created_at,
+           NULL AS last_used_at,
+           0 AS total_uploads,
+           CASE
+             WHEN s.is_active = 0 THEN 'revoked'
+             WHEN s.expires_at < GETUTCDATE() THEN 'expired'
+             ELSE 'active'
+           END AS status,
+           COUNT(p.id) AS photo_count,
+           ISNULL(SUM(p.file_size), 0) AS total_size
+         FROM upload_sessions s
+         LEFT JOIN photos p ON p.session_id = s.id
+         GROUP BY s.id, s.team_name, s.expires_at, s.created_at, s.is_active
+         ORDER BY s.created_at DESC`
+      )
+    }
 
     return Response.json({ sessions: result.rows })
   } catch (err) {
