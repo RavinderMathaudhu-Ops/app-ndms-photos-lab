@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, Clock, Camera, HardDrive, Shield, ShieldOff,
   RefreshCw, Loader2, AlertCircle, CheckCircle2, XCircle,
-  RotateCcw, Search, X,
+  RotateCcw, Search, X, Upload, Trash2, Activity,
 } from 'lucide-react'
 
 interface Session {
@@ -13,6 +13,8 @@ interface Session {
   team_name: string
   expires_at: string
   created_at: string
+  last_used_at: string | null
+  total_uploads: number
   status: 'active' | 'expired' | 'revoked'
   photo_count: number
   total_size: number
@@ -264,6 +266,8 @@ export default function SessionManager(_props: SessionManagerProps) {
           {filtered.map((session) => {
             const config = statusConfig[session.status]
             const StatusIcon = config.icon
+            const wasUsed = !!session.last_used_at
+            const deletedCount = Math.max(0, session.total_uploads - session.photo_count)
 
             return (
               <motion.div
@@ -289,21 +293,50 @@ export default function SessionManager(_props: SessionManagerProps) {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${config.color}`}>
                         {config.label}
                       </span>
+                      {/* Used / Never Used badge */}
+                      {wasUsed ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0
+                          bg-blue-500/20 text-blue-300 border-blue-500/30">
+                          Used
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0
+                          bg-white/5 text-white/25 border-white/10">
+                          Never Used
+                        </span>
+                      )}
                     </div>
 
+                    {/* Usage stats row */}
                     <div className="flex items-center gap-3 mt-1 text-xs text-white/35">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1" title="Photos currently in system">
                         <Camera className="w-3 h-3" />
                         {session.photo_count} photo{session.photo_count !== 1 ? 's' : ''}
                       </span>
+                      {session.total_uploads > 0 && (
+                        <span className="flex items-center gap-1 text-emerald-300/60" title="Total uploads made with this PIN">
+                          <Upload className="w-3 h-3" />
+                          {session.total_uploads} uploaded
+                        </span>
+                      )}
+                      {deletedCount > 0 && (
+                        <span className="flex items-center gap-1 text-red-300/60" title="Photos uploaded by this PIN that were later deleted">
+                          <Trash2 className="w-3 h-3" />
+                          {deletedCount} deleted
+                        </span>
+                      )}
                       {session.total_size > 0 && (
                         <span className="flex items-center gap-1">
                           <HardDrive className="w-3 h-3" />
                           {formatBytes(session.total_size)}
                         </span>
                       )}
+                    </div>
+
+                    {/* Timing info */}
+                    <div className="flex items-center gap-3 mt-0.5 text-[10px] text-white/20">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-2.5 h-2.5" />
                         {session.status === 'active'
                           ? formatRelativeTime(session.expires_at)
                           : session.status === 'expired'
@@ -311,13 +344,18 @@ export default function SessionManager(_props: SessionManagerProps) {
                             : 'Revoked'
                         }
                       </span>
+                      <span>
+                        Created {new Date(session.created_at).toLocaleDateString('en-US', {
+                          month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+                        })}
+                      </span>
+                      {session.last_used_at && (
+                        <span className="flex items-center gap-1">
+                          <Activity className="w-2.5 h-2.5" />
+                          Last used {formatRelativeTime(session.last_used_at)}
+                        </span>
+                      )}
                     </div>
-
-                    <p className="text-[10px] text-white/20 mt-0.5">
-                      Created {new Date(session.created_at).toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-                      })}
-                    </p>
                   </div>
 
                   {/* Action button */}

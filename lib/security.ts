@@ -222,7 +222,7 @@ export function extractRequestContext(req: Request): {
 
 /**
  * Audit Log Entry
- * For security event logging
+ * For security event logging (console)
  */
 export interface AuditLog {
   timestamp: string
@@ -247,5 +247,41 @@ export function createAuditLog(
       ...details,
       userAgent: context.userAgent,
     },
+  }
+}
+
+/**
+ * Persistent Audit Log — writes to admin_audit_log table in DB
+ * NIST 800-53 AU-2/AU-3/AU-12: All security-relevant events must be
+ * recorded with who, what, when, where (IP), and outcome.
+ *
+ * This is fire-and-forget — audit failures never block the primary operation.
+ */
+export async function writeAuditLog(
+  entityType: string,
+  entityId: string | null,
+  action: string,
+  performedBy: string,
+  req: Request,
+  details: Record<string, any> = {}
+): Promise<void> {
+  try {
+    const { query: dbQuery } = await import('@/lib/db')
+    const ip = req.headers.get('x-forwarded-for') || 'unknown'
+    const ua = req.headers.get('user-agent') || 'unknown'
+    await dbQuery(
+      `INSERT INTO admin_audit_log (entity_type, entity_id, action, performed_by, ip_address, details)
+       VALUES (@entityType, @entityId, @action, @performedBy, @ip, @details)`,
+      {
+        entityType,
+        entityId,
+        action,
+        performedBy,
+        ip,
+        details: JSON.stringify({ ...details, userAgent: ua }),
+      }
+    )
+  } catch {
+    // Non-critical — never block the primary operation for audit
   }
 }

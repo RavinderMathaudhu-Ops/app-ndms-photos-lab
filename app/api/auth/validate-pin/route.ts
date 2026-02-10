@@ -1,7 +1,7 @@
 import { query } from '@/lib/db'
 import { signToken } from '@/lib/auth'
 import { rateLimit } from '@/lib/rateLimit'
-import { validation, secureErrorResponse, createAuditLog } from '@/lib/security'
+import { validation, secureErrorResponse, createAuditLog, writeAuditLog } from '@/lib/security'
 import bcrypt from 'bcryptjs'
 
 export async function POST(req: Request) {
@@ -20,6 +20,10 @@ export async function POST(req: Request) {
     if (!limit.allowed) {
       // Log rate limit exceeded
       console.warn(`⚠️ Rate limit exceeded for PIN validation from ${ip}`)
+      await writeAuditLog('auth', null, 'pin.auth_rate_limited', 'anonymous', req, {
+        reason: 'PIN validation rate limit exceeded',
+        retryAfter: limit.retryAfter,
+      })
       return Response.json(
         { error: `Too many attempts. Try again in ${limit.retryAfter} seconds.` },
         {
@@ -40,7 +44,11 @@ export async function POST(req: Request) {
         remainingAttempts: limit.remaining,
       })
       console.warn('AUTH_FAILURE:', auditLog)
-      
+      await writeAuditLog('auth', null, 'pin.auth_failure', 'anonymous', req, {
+        reason: 'Invalid PIN format',
+        remainingAttempts: limit.remaining,
+      })
+
       return Response.json({ error: validation_result.error }, { status: 400 })
     }
     // Fetch all non-expired sessions and compare hashes (bcrypt can't do WHERE)
@@ -65,6 +73,10 @@ export async function POST(req: Request) {
         remainingAttempts: limit.remaining,
       })
       console.warn('AUTH_FAILURE:', auditLog)
+      await writeAuditLog('auth', null, 'pin.auth_failure', 'anonymous', req, {
+        reason: 'Invalid or expired PIN',
+        remainingAttempts: limit.remaining,
+      })
 
       return Response.json(
         { error: `Invalid or expired PIN. ${limit.remaining} attempts remaining.` },
@@ -76,12 +88,25 @@ export async function POST(req: Request) {
     const teamName = matchedSession.team_name
     const token = signToken({ sessionId }, '24h')
 
+    // Track PIN usage — update last_used_at
+    try {
+      await query(
+        `UPDATE upload_sessions SET last_used_at = GETUTCDATE() WHERE id = @id`,
+        { id: sessionId }
+      )
+    } catch {
+      // Non-critical — auth still succeeds
+    }
+
     // Log successful authentication
     const auditLog = createAuditLog('AUTH_SUCCESS', req, {
       sessionId,
       teamName,
     })
     console.log('✅ AUTH_SUCCESS:', auditLog)
+    await writeAuditLog('auth', sessionId, 'pin.auth_success', `pin:${sessionId}`, req, {
+      teamName,
+    })
 
     return Response.json({
       sessionId,

@@ -154,9 +154,9 @@ export async function DELETE(req: Request, context: RouteContext) {
   const { id } = await context.params
 
   try {
-    // Get photo info for audit
+    // Get photo info for audit (include session_id for usage tracking)
     const photoResult = await query(
-      `SELECT file_name, file_size FROM photos WHERE id = @id`,
+      `SELECT file_name, file_size, session_id FROM photos WHERE id = @id`,
       { id }
     )
     if (!photoResult.rows.length) {
@@ -182,6 +182,7 @@ export async function DELETE(req: Request, context: RouteContext) {
         details: JSON.stringify({
           fileName: photoResult.rows[0].file_name,
           fileSize: photoResult.rows[0].file_size,
+          sessionId: photoResult.rows[0].session_id,
           blobsDeleted: deletedCount + renditionsDeleted,
         }),
       }

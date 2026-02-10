@@ -208,6 +208,18 @@ const MIGRATIONS: { name: string; sql: string }[] = [
           CREATE INDEX IX_batches_status ON upload_batches(status, started_at DESC)`,
   },
 
+  // ── upload_sessions: usage tracking columns ──
+  {
+    name: 'upload_sessions.last_used_at',
+    sql: `IF COL_LENGTH('upload_sessions', 'last_used_at') IS NULL
+          ALTER TABLE upload_sessions ADD last_used_at DATETIME NULL`,
+  },
+  {
+    name: 'upload_sessions.total_uploads',
+    sql: `IF COL_LENGTH('upload_sessions', 'total_uploads') IS NULL
+          ALTER TABLE upload_sessions ADD total_uploads INT NOT NULL DEFAULT 0`,
+  },
+
   // ── Performance indexes on photos ──
   {
     name: 'IX_photos_admin_list',

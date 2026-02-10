@@ -12,6 +12,8 @@ export async function GET(req: Request) {
          s.team_name,
          s.expires_at,
          s.created_at,
+         s.last_used_at,
+         ISNULL(s.total_uploads, 0) AS total_uploads,
          CASE
            WHEN s.is_active = 0 THEN 'revoked'
            WHEN s.expires_at < GETUTCDATE() THEN 'expired'
@@ -21,7 +23,7 @@ export async function GET(req: Request) {
          ISNULL(SUM(p.file_size), 0) AS total_size
        FROM upload_sessions s
        LEFT JOIN photos p ON p.session_id = s.id
-       GROUP BY s.id, s.team_name, s.expires_at, s.created_at, s.is_active
+       GROUP BY s.id, s.team_name, s.expires_at, s.created_at, s.is_active, s.last_used_at, s.total_uploads
        ORDER BY s.created_at DESC`
     )
 

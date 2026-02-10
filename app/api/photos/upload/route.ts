@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { query } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 import { rateLimit } from '@/lib/rateLimit'
-import { validation, createAuditLog, secureErrorResponse } from '@/lib/security'
+import { validation, createAuditLog, secureErrorResponse, writeAuditLog } from '@/lib/security'
 import { getContainerClient } from '@/lib/blobHelpers'
 
 export async function POST(req: Request) {
@@ -23,7 +23,10 @@ export async function POST(req: Request) {
         type: 'File Upload',
       })
       console.warn('SECURITY_ALERT:', auditLog)
-      
+      await writeAuditLog('auth', null, 'upload.rate_limited', 'anonymous', req, {
+        reason: 'Upload rate limit exceeded',
+      })
+
       return Response.json(
         { error: 'Upload rate limit exceeded' },
         { status: 429 }
@@ -174,6 +177,37 @@ export async function POST(req: Request) {
       )
     } catch {
       // Non-critical — photo saved, EXIF insert is best-effort
+    }
+
+    // Increment total_uploads counter on the session
+    try {
+      await query(
+        `UPDATE upload_sessions SET total_uploads = total_uploads + 1, last_used_at = GETUTCDATE() WHERE id = @id`,
+        { id: sessionId }
+      )
+    } catch {
+      // Non-critical — photo already saved
+    }
+
+    // Write audit log to DB
+    try {
+      await query(
+        `INSERT INTO admin_audit_log (entity_type, entity_id, action, performed_by, ip_address, details)
+         VALUES ('photo', @photoId, 'photo.uploaded', @performedBy, @ip, @details)`,
+        {
+          photoId,
+          performedBy: `pin:${sessionId}`,
+          ip,
+          details: JSON.stringify({
+            fileName: file.name,
+            fileSize: file.size,
+            sessionId,
+            source: 'pin',
+          }),
+        }
+      )
+    } catch {
+      // Non-critical — photo already saved
     }
 
     return Response.json({

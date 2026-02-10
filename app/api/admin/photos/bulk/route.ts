@@ -28,22 +28,31 @@ export async function POST(req: Request) {
 
     switch (action) {
       case 'delete': {
-        // Delete blobs for each photo
-        for (const id of photoIds) {
-          await deleteBlobsByPrefix(`${id}/`)
-          await deleteBlobsByPrefix(`renditions/${id}/`)
-        }
-        // Build parameterized IN clause
+        // Capture session_ids before deleting (for usage tracking)
         const deleteParams: Record<string, any> = {}
         const placeholders = photoIds.map((id, i) => {
           deleteParams[`id${i}`] = id
           return `@id${i}`
         })
-        const result = await query(
+        const sessionInfo = await query(
+          `SELECT DISTINCT session_id FROM photos WHERE session_id IS NOT NULL AND id IN (${placeholders.join(',')})`,
+          deleteParams
+        )
+        const affectedSessionIds = sessionInfo.rows.map((r: any) => r.session_id)
+
+        // Delete blobs for each photo
+        for (const id of photoIds) {
+          await deleteBlobsByPrefix(`${id}/`)
+          await deleteBlobsByPrefix(`renditions/${id}/`)
+        }
+        // Delete from DB
+        await query(
           `DELETE FROM photos WHERE id IN (${placeholders.join(',')})`,
           deleteParams
         )
         affected = photoIds.length
+        // Store affected session IDs in bulk audit details below
+        ;(body as any)._affectedSessionIds = affectedSessionIds
         break
       }
 
@@ -118,7 +127,11 @@ export async function POST(req: Request) {
         action: `bulk.${action}`,
         performedBy: ctx.adminEmail,
         ip,
-        details: JSON.stringify({ photoCount: photoIds.length, value }),
+        details: JSON.stringify({
+          photoCount: photoIds.length,
+          value,
+          sessionIds: (body as any)._affectedSessionIds || undefined,
+        }),
       }
     )
 

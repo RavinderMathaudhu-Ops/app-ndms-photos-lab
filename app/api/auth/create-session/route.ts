@@ -1,7 +1,7 @@
 import { randomInt } from 'crypto'
 import { query } from '@/lib/db'
 import { rateLimit } from '@/lib/rateLimit'
-import { validation, createAuditLog } from '@/lib/security'
+import { validation, createAuditLog, writeAuditLog } from '@/lib/security'
 import { auth } from '@/auth'
 import bcrypt from 'bcryptjs'
 
@@ -36,6 +36,9 @@ export async function POST(req: Request) {
           attempt: 'Admin API',
         })
         console.warn('SECURITY_ALERT:', auditLog)
+        await writeAuditLog('auth', null, 'admin.auth_rate_limited', 'anonymous', req, {
+          reason: 'Admin auth rate limit exceeded',
+        })
 
         return Response.json(
           { error: 'Too many failed authentication attempts' },
@@ -44,6 +47,9 @@ export async function POST(req: Request) {
       }
 
       console.warn(`⚠️ Invalid admin auth attempt from ${ip}`)
+      await writeAuditLog('auth', null, 'admin.auth_failure', 'anonymous', req, {
+        reason: 'No valid Entra ID session',
+      })
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -60,6 +66,9 @@ export async function POST(req: Request) {
         reason: 'PIN generation rate limit exceeded',
       })
       console.warn('SECURITY_ALERT:', auditLog)
+      await writeAuditLog('auth', null, 'pin.rate_limited', adminUser, req, {
+        reason: 'PIN generation rate limit exceeded',
+      })
 
       return Response.json(
         { error: 'Rate limit exceeded for PIN generation' },
@@ -95,6 +104,14 @@ export async function POST(req: Request) {
       adminUser,
     })
     console.log('✅ PIN_CREATED:', auditLog)
+
+    // Persist to DB audit log
+    await writeAuditLog('session', result.rows[0].id, 'pin.created', adminUser, req, {
+      teamName: teamName || 'Anonymous',
+      pinLast2: pin.slice(-2),
+      authMethod,
+      expiresAt: expiresAt.toISOString(),
+    })
 
     // Return plaintext PIN only once at creation (admin gives to team verbally)
     return Response.json({ ...result.rows[0], pin }, {

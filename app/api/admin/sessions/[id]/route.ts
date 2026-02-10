@@ -1,5 +1,6 @@
 import { guardAdmin } from '@/lib/adminAuth'
 import { query } from '@/lib/db'
+import { writeAuditLog } from '@/lib/security'
 
 export async function PATCH(
   req: Request,
@@ -13,6 +14,13 @@ export async function PATCH(
   try {
     const { action } = await req.json()
 
+    // Get team name for audit context
+    const sessionResult = await query(
+      `SELECT team_name FROM upload_sessions WHERE id = @id`,
+      { id }
+    )
+    const teamName = sessionResult.rows[0]?.team_name || 'unknown'
+
     if (action === 'revoke') {
       await query(
         `UPDATE upload_sessions SET is_active = 0 WHERE id = @id`,
@@ -20,6 +28,9 @@ export async function PATCH(
       )
 
       console.log(`Session ${id} revoked by ${ctx.adminEmail}`)
+      await writeAuditLog('session', id, 'session.revoked', ctx.adminEmail || 'admin', req, {
+        teamName,
+      })
       return Response.json({ success: true, message: 'Session revoked' })
     }
 
@@ -30,6 +41,9 @@ export async function PATCH(
       )
 
       console.log(`Session ${id} reactivated by ${ctx.adminEmail}`)
+      await writeAuditLog('session', id, 'session.reactivated', ctx.adminEmail || 'admin', req, {
+        teamName,
+      })
       return Response.json({ success: true, message: 'Session reactivated' })
     }
 
