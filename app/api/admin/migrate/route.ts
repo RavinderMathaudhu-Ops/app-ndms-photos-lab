@@ -220,6 +220,20 @@ const MIGRATIONS: { name: string; sql: string }[] = [
           ALTER TABLE upload_sessions ADD total_uploads INT NOT NULL DEFAULT 0`,
   },
 
+  // ── Backfill usage tracking from existing photos ──
+  {
+    name: 'backfill upload_sessions.total_uploads',
+    sql: `UPDATE s SET
+            s.total_uploads = ISNULL(p.cnt, 0),
+            s.last_used_at = p.latest
+          FROM upload_sessions s
+          OUTER APPLY (
+            SELECT COUNT(*) AS cnt, MAX(created_at) AS latest
+            FROM photos WHERE session_id = s.id
+          ) p
+          WHERE s.total_uploads = 0 AND p.cnt > 0`,
+  },
+
   // ── Performance indexes on photos ──
   {
     name: 'IX_photos_admin_list',
